@@ -19,9 +19,10 @@ RUN ARCH=$(uname -m) \
        -o /tmp/shodh.tar.gz \
     && mkdir -p /tmp/shodh \
     && tar -xzf /tmp/shodh.tar.gz -C /tmp/shodh \
-    && find /tmp/shodh -name 'shodh-memory*' -type f -executable -exec cp {} /usr/local/bin/shodh-memory \; \
-    && find /tmp/shodh -name 'libonnxruntime*' -type f -exec cp {} /usr/local/lib/ \; \
-    && chmod +x /usr/local/bin/shodh-memory \
+    && cp /tmp/shodh/shodh /usr/local/bin/shodh \
+    && cp /tmp/shodh/shodh-memory /usr/local/bin/shodh-memory \
+    && cp /tmp/shodh/libonnxruntime.so /usr/local/lib/ \
+    && chmod +x /usr/local/bin/shodh /usr/local/bin/shodh-memory \
     && rm -rf /tmp/shodh /tmp/shodh.tar.gz
 
 # -------------------------------------------------------------------
@@ -92,7 +93,8 @@ RUN curl -fsSL https://github.com/hassio-addons/bashio/archive/refs/tags/v0.16.2
     && ln -s /usr/lib/bashio/bashio /usr/bin/bashio \
     && rm -rf bashio-0.16.2
 
-# Copy Shodh binary and ONNX runtime from stage 1
+# Copy Shodh binaries and ONNX runtime from stage 1
+COPY --from=shodh /usr/local/bin/shodh /usr/local/bin/shodh
 COPY --from=shodh /usr/local/bin/shodh-memory /usr/local/bin/shodh-memory
 COPY --from=shodh /usr/local/lib/libonnxruntime* /usr/local/lib/
 RUN ldconfig
