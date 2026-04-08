@@ -25,19 +25,27 @@ RUN ARCH=$(uname -m) \
     && rm -rf /tmp/shodh /tmp/shodh.tar.gz
 
 # -------------------------------------------------------------------
-# Stage 2: Build home-mind-server from submodule
+# Stage 2: Build home-mind-server from GitHub
 # -------------------------------------------------------------------
 FROM node:22-bookworm-slim AS builder
 
+ARG HOME_MIND_VERSION=v0.13.0
+
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /build
 
-# Copy server source from submodule
-COPY server/src/home-mind-server/package*.json ./
-RUN npm ci
+# Clone the server source at a pinned tag
+RUN git clone --depth 1 --branch ${HOME_MIND_VERSION} \
+    https://github.com/hoornet/home-mind.git /tmp/home-mind
 
-COPY server/src/home-mind-server/src ./src
-COPY server/src/home-mind-server/tsconfig.json ./
-RUN npx tsc
+# Build the server
+RUN cp /tmp/home-mind/src/home-mind-server/package*.json ./ \
+    && npm ci \
+    && cp -r /tmp/home-mind/src/home-mind-server/src ./src \
+    && cp /tmp/home-mind/src/home-mind-server/tsconfig.json ./ \
+    && npx tsc
 
 # Production dependencies only
 RUN rm -rf node_modules && npm ci --omit=dev
@@ -96,8 +104,7 @@ COPY --from=builder /build/node_modules ./node_modules
 COPY --from=builder /build/package.json ./
 
 # Copy s6-overlay service definitions and scripts
-# Build context is repo root; rootfs is inside homemind-pro/
-COPY homemind-pro/rootfs /
+COPY rootfs /
 
 # Ensure all scripts are executable
 RUN find /etc/s6-overlay -name 'run' -exec chmod +x {} \; \

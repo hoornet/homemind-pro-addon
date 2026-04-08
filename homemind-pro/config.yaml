@@ -39,4 +39,3 @@ schema:
   llm_base_url: "url?"
   custom_prompt: "str?"
   log_level: "list(debug|info|warn|error)"
-image: "ghcr.io/hoornet/homemind-pro-{arch}"
