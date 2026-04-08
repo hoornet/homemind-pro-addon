@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.6
+
+- Fix config validation error when `llm_base_url` is empty (HA rejects empty string as invalid URL)
+
 ## 1.0.5
 
 - Add OpenRouter as a first-class LLM provider option (no more "openai" workaround)
