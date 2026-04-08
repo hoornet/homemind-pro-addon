@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.2
+
+- Fix HA API authentication — added diagnostics for Supervisor token injection
+- Investigating 401 errors on device/topology scans
+
+## 1.0.1
+
+- Fix Shodh startup failure — call `shodh server` binary directly instead of wrapper script
+- Fix Dockerfile for HA Supervisor build context (clone server from GitHub at build time)
+- Remove pre-built image reference (local builds only until CI/CD is set up)
+
 ## 1.0.0
 
 - Initial release
