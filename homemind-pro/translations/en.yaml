@@ -1,0 +1,35 @@
+configuration:
+  llm_mode:
+    name: LLM Mode
+    description: >-
+      "cloud" uses HomeMind's managed AI service (requires a proxy API key from homemind.veganostr.com).
+      "byok" lets you use your own API key from Anthropic, OpenAI, or a local Ollama instance.
+  proxy_api_key:
+    name: Cloud API Key
+    description: >-
+      Your HomeMind Cloud proxy key. Get one at homemind.veganostr.com.
+      Only needed when LLM Mode is "cloud".
+  llm_provider:
+    name: LLM Provider
+    description: >-
+      Which LLM backend to use. Only applies when LLM Mode is "byok".
+  llm_api_key:
+    name: API Key
+    description: >-
+      Your Anthropic or OpenAI API key. Only needed when LLM Mode is "byok".
+  llm_model:
+    name: Model
+    description: >-
+      Model ID (e.g., claude-haiku-4-5-20251001, gpt-4o-mini). Leave empty for provider default.
+  llm_base_url:
+    name: API Base URL
+    description: >-
+      Custom API endpoint. For OpenAI-compatible APIs or Ollama. Leave empty for default.
+  custom_prompt:
+    name: Custom Prompt
+    description: >-
+      Override the AI assistant's personality and instructions. Leave empty for the default Home Mind persona.
+  log_level:
+    name: Log Level
+    description: >-
+      Logging verbosity. Use "debug" for troubleshooting.

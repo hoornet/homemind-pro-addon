@@ -1,0 +1,42 @@
+name: "HomeMind PRO"
+version: "1.0.0"
+slug: "homemind_pro"
+description: "AI assistant with cognitive memory for Home Assistant"
+url: "https://github.com/hoornet/homemind-pro-addon"
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+homeassistant: "2024.4.0"
+homeassistant_api: true
+hassio_api: true
+auth_api: true
+discovery:
+  - home_mind
+map:
+  - addon_config:rw
+ports:
+  3100/tcp: null
+memory: 768
+panel_icon: "mdi:brain"
+options:
+  llm_mode: "cloud"
+  proxy_api_key: ""
+  llm_provider: "anthropic"
+  llm_api_key: ""
+  llm_model: ""
+  llm_base_url: ""
+  custom_prompt: ""
+  log_level: "info"
+schema:
+  llm_mode: "list(cloud|byok)"
+  proxy_api_key: "str?"
+  llm_provider: "list(anthropic|openai|ollama)?"
+  llm_api_key: "str?"
+  llm_model: "str?"
+  llm_base_url: "url?"
+  custom_prompt: "str?"
+  log_level: "list(debug|info|warn|error)"
+image: "ghcr.io/hoornet/homemind-pro-{arch}"

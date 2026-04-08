@@ -1,0 +1,17 @@
+#!/command/with-contenv bash
+
+SHODH_KEY=$(cat /data/.shodh_key 2>/dev/null || echo "")
+if [ -z "$SHODH_KEY" ]; then
+    echo "[shodh] ERROR: No API key found at /data/.shodh_key"
+    sleep 5
+    exit 1
+fi
+
+mkdir -p /data/shodh
+
+echo "[shodh] Starting Shodh Memory on port 3030..."
+export SHODH_DEV_API_KEY="$SHODH_KEY"
+exec shodh-memory \
+    --host 127.0.0.1 \
+    --port 3030 \
+    --storage /data/shodh

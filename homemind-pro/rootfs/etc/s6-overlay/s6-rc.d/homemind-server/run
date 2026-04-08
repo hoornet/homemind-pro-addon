@@ -1,0 +1,18 @@
+#!/command/with-contenv bash
+
+echo "[server] Waiting for Shodh Memory to be ready..."
+for i in $(seq 1 30); do
+    if curl -sf http://127.0.0.1:3030/health > /dev/null 2>&1; then
+        echo "[server] Shodh is healthy"
+        break
+    fi
+    if [ "$i" -eq 30 ]; then
+        echo "[server] ERROR: Shodh did not become healthy after 30s"
+        exit 1
+    fi
+    sleep 1
+done
+
+echo "[server] Starting Home Mind server on port 3100..."
+cd /opt/homemind
+exec node dist/index.js

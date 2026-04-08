@@ -1,0 +1,39 @@
+#!/command/with-contenv bash
+# Send discovery message to HA Supervisor so the companion integration
+# (home-mind-hacs) auto-configures without manual URL entry.
+
+# Only run if we have a Supervisor token (i.e., running inside HA)
+SUPERVISOR_TOKEN="${SUPERVISOR_TOKEN:-}"
+if [ -z "$SUPERVISOR_TOKEN" ] && [ -f /var/run/s6/container_environment/SUPERVISOR_TOKEN ]; then
+    SUPERVISOR_TOKEN=$(cat /var/run/s6/container_environment/SUPERVISOR_TOKEN)
+fi
+
+if [ -z "$SUPERVISOR_TOKEN" ]; then
+    echo "[discovery] No SUPERVISOR_TOKEN — not running inside HA, skipping discovery"
+    exit 0
+fi
+
+# Wait for the server to be healthy
+echo "[discovery] Waiting for Home Mind server..."
+for i in $(seq 1 30); do
+    if curl -sf http://127.0.0.1:3100/api/health > /dev/null 2>&1; then
+        break
+    fi
+    if [ "$i" -eq 30 ]; then
+        echo "[discovery] Server did not become healthy, skipping discovery"
+        exit 0
+    fi
+    sleep 2
+done
+
+# Get our hostname (used by HA to reach this add-on on the internal network)
+ADDON_HOST=$(hostname)
+
+echo "[discovery] Sending discovery to Supervisor (host=${ADDON_HOST}, port=3100)..."
+RESPONSE=$(curl -sf -X POST \
+    -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+    -H "Content-Type: application/json" \
+    -d "{\"service\":\"home_mind\",\"addon\":\"homemind_pro\",\"host\":\"${ADDON_HOST}\",\"port\":3100}" \
+    http://supervisor/discovery 2>&1) || true
+
+echo "[discovery] Supervisor response: ${RESPONSE:-no response}"

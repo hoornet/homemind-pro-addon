@@ -1,0 +1,25 @@
+#!/command/with-contenv bash
+# Monitors Shodh RSS memory usage every 4 hours.
+# If RSS exceeds 512MB, gracefully restarts Shodh.
+# Mitigates memory leak: https://github.com/varun29ankuS/shodh-memory/issues/90
+
+MAX_RSS_KB=524288  # 512MB
+
+while true; do
+    sleep 14400  # 4 hours
+
+    SHODH_PID=$(pgrep -f shodh-memory || true)
+    if [ -z "$SHODH_PID" ]; then
+        continue
+    fi
+
+    RSS_KB=$(awk '/VmRSS/ {print $2}' "/proc/${SHODH_PID}/status" 2>/dev/null || echo "0")
+
+    if [ "$RSS_KB" -gt "$MAX_RSS_KB" ]; then
+        echo "[watchdog] Shodh RSS is ${RSS_KB}KB (>${MAX_RSS_KB}KB limit), restarting..."
+        kill -TERM "$SHODH_PID"
+        # s6 will restart Shodh automatically via the longrun service
+    else
+        echo "[watchdog] Shodh RSS is ${RSS_KB}KB — healthy"
+    fi
+done
