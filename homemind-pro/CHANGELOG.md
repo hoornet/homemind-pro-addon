@@ -1,9 +1,14 @@
 # Changelog
 
+## 1.0.3
+
+- Fix HA API 401 errors — use Supervisor internal proxy (`http://supervisor/core`) instead of direct HA access
+- Add-ons must route HA API calls through the Supervisor, not directly to `homeassistant:8123`
+
 ## 1.0.2
 
-- Fix HA API authentication — added diagnostics for Supervisor token injection
-- Investigating 401 errors on device/topology scans
+- Add diagnostics for Supervisor token injection
+- Confirmed SUPERVISOR_TOKEN is present (112 chars) — issue was routing, not auth
 
 ## 1.0.1
 

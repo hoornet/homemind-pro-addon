@@ -74,7 +74,7 @@ if [ -z "$SUPERVISOR_TOKEN" ]; then
 else
     echo "[init] SUPERVISOR_TOKEN found (${#SUPERVISOR_TOKEN} chars)"
 fi
-write_env "HA_URL" "http://homeassistant:8123"
+write_env "HA_URL" "http://supervisor/core"
 write_env "HA_TOKEN" "$SUPERVISOR_TOKEN"
 
 # --- Shodh Memory (internal, always localhost) ---
