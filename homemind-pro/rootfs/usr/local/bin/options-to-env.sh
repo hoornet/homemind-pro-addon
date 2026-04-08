@@ -35,12 +35,11 @@ LOG_LEVEL=$(jq -r '.log_level // "info"' "$OPTIONS")
 
 # --- LLM configuration ---
 if [ "$LLM_MODE" = "cloud" ]; then
-    # Cloud mode: route through HomeMind proxy
+    # Cloud mode: user's managed OpenRouter key (created via HomeMind Cloud)
     write_env "LLM_PROVIDER" "openai"
     write_env "OPENAI_API_KEY" "$PROXY_KEY"
-    write_env "OPENAI_BASE_URL" "https://homemind.veganostr.com/proxy/v1"
-    # Model is determined by proxy based on the key's tier
-    write_env "LLM_MODEL" "proxy-managed"
+    write_env "OPENAI_BASE_URL" "https://openrouter.ai/api/v1"
+    write_env "LLM_MODEL" "anthropic/claude-haiku-4.5"
 else
     # BYOK mode: user provides their own API key
     write_env "LLM_PROVIDER" "$LLM_PROVIDER"
@@ -53,12 +52,23 @@ else
             write_env "OPENAI_API_KEY" "$LLM_API_KEY"
             [ -n "$LLM_BASE_URL" ] && write_env "OPENAI_BASE_URL" "$LLM_BASE_URL"
             ;;
+        openrouter)
+            # OpenRouter is OpenAI-compatible — rewrite provider to openai
+            write_env "LLM_PROVIDER" "openai"
+            write_env "OPENAI_API_KEY" "$LLM_API_KEY"
+            write_env "OPENAI_BASE_URL" "https://openrouter.ai/api/v1"
+            ;;
         ollama)
             write_env "OLLAMA_BASE_URL" "${LLM_BASE_URL:-http://homeassistant:11434/v1}"
             ;;
     esac
 
-    [ -n "$LLM_MODEL" ] && write_env "LLM_MODEL" "$LLM_MODEL"
+    # Default model for OpenRouter if not specified
+    if [ "$LLM_PROVIDER" = "openrouter" ] && [ -z "$LLM_MODEL" ]; then
+        write_env "LLM_MODEL" "anthropic/claude-haiku-4.5"
+    elif [ -n "$LLM_MODEL" ]; then
+        write_env "LLM_MODEL" "$LLM_MODEL"
+    fi
 fi
 
 # --- Home Assistant (automatic via Supervisor) ---

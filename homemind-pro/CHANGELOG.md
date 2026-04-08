@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.5
+
+- Add OpenRouter as a first-class LLM provider option (no more "openai" workaround)
+- Cloud mode now routes directly to OpenRouter (replaces old metering proxy)
+- Default model for OpenRouter: `anthropic/claude-haiku-4.5`
+- Updated config descriptions with OpenRouter model ID examples
+
 ## 1.0.4
 
 - Auto-install Home Mind HA integration on startup — no HACS required

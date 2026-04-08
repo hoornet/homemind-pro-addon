@@ -2,25 +2,27 @@ configuration:
   llm_mode:
     name: LLM Mode
     description: >-
-      "cloud" uses HomeMind's managed AI service (requires a proxy API key from homemind.veganostr.com).
-      "byok" lets you use your own API key from Anthropic, OpenAI, or a local Ollama instance.
+      "cloud" uses HomeMind's managed AI service (requires a Cloud API Key from homemind.veganostr.com).
+      "byok" lets you use your own API key from Anthropic, OpenAI, OpenRouter, or a local Ollama instance.
   proxy_api_key:
     name: Cloud API Key
     description: >-
-      Your HomeMind Cloud proxy key. Get one at homemind.veganostr.com.
+      Your HomeMind Cloud API key. Get one at homemind.veganostr.com.
       Only needed when LLM Mode is "cloud".
   llm_provider:
     name: LLM Provider
     description: >-
       Which LLM backend to use. Only applies when LLM Mode is "byok".
+      OpenRouter gives access to many models (Anthropic, OpenAI, etc.) with a single key.
   llm_api_key:
     name: API Key
     description: >-
-      Your Anthropic or OpenAI API key. Only needed when LLM Mode is "byok".
+      Your API key for the selected provider. Only needed when LLM Mode is "byok".
   llm_model:
     name: Model
     description: >-
-      Model ID (e.g., claude-haiku-4-5-20251001, gpt-4o-mini). Leave empty for provider default.
+      Model ID. Examples: anthropic/claude-haiku-4.5 (OpenRouter), claude-haiku-4-5-20251001 (Anthropic),
+      gpt-4o-mini (OpenAI). Leave empty for provider default.
   llm_base_url:
     name: API Base URL
     description: >-

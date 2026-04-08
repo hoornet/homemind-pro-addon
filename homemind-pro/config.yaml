@@ -1,5 +1,5 @@
 name: "HomeMind PRO"
-version: "1.0.4"
+version: "1.0.5"
 slug: "homemind_pro"
 description: "AI assistant with cognitive memory for Home Assistant"
 url: "https://github.com/hoornet/homemind-pro-addon"
@@ -34,7 +34,7 @@ options:
 schema:
   llm_mode: "list(cloud|byok)"
   proxy_api_key: "str?"
-  llm_provider: "list(anthropic|openai|ollama)?"
+  llm_provider: "list(anthropic|openai|openrouter|ollama)?"
   llm_api_key: "str?"
   llm_model: "str?"
   llm_base_url: "url?"
