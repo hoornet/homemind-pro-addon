@@ -67,6 +67,13 @@ SUPERVISOR_TOKEN="${SUPERVISOR_TOKEN:-}"
 if [ -z "$SUPERVISOR_TOKEN" ] && [ -f "${S6_ENV_DIR}/SUPERVISOR_TOKEN" ]; then
     SUPERVISOR_TOKEN=$(cat "${S6_ENV_DIR}/SUPERVISOR_TOKEN")
 fi
+if [ -z "$SUPERVISOR_TOKEN" ]; then
+    echo "[init] WARNING: SUPERVISOR_TOKEN is empty — HA API calls will fail (401)"
+    echo "[init] DEBUG: s6 env dir contents: $(ls ${S6_ENV_DIR}/ 2>/dev/null | tr '\n' ' ')"
+    echo "[init] DEBUG: env vars with SUPER: $(env | grep -i SUPER 2>/dev/null || echo 'none')"
+else
+    echo "[init] SUPERVISOR_TOKEN found (${#SUPERVISOR_TOKEN} chars)"
+fi
 write_env "HA_URL" "http://homeassistant:8123"
 write_env "HA_TOKEN" "$SUPERVISOR_TOKEN"
 
