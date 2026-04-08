@@ -1,5 +1,5 @@
 name: "HomeMind PRO"
-version: "1.0.3"
+version: "1.0.4"
 slug: "homemind_pro"
 description: "AI assistant with cognitive memory for Home Assistant"
 url: "https://github.com/hoornet/homemind-pro-addon"
@@ -17,6 +17,7 @@ discovery:
   - home_mind
 map:
   - addon_config:rw
+  - config:rw
 ports:
   3100/tcp: null
 memory: 768

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.4
+
+- Auto-install Home Mind HA integration on startup — no HACS required
+- Bundled integration files are copied to `/config/custom_components/home_mind/`
+- Auto-updates when a newer version is bundled
+- Truly one-click install: add-on handles everything
+
 ## 1.0.3
 
 - Fix HA API 401 errors — use Supervisor internal proxy (`http://supervisor/core`) instead of direct HA access
