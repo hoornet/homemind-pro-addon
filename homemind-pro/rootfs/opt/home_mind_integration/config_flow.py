@@ -78,7 +78,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         _LOGGER.error("Error connecting to Home Mind API: %s", err)
         raise CannotConnect from err
 
-    return {"title": "Home Mind"}
+    return {"title": "HomeMind PRO"}
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -130,7 +130,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             host = self._hassio_discovery["host"]
             port = self._hassio_discovery.get("port", 3100)
             return self.async_create_entry(
-                title="Home Mind (Add-on)",
+                title="HomeMind PRO",
                 data={
                     CONF_API_URL: f"http://{host}:{port}",
                     CONF_USER_ID: DEFAULT_USER_ID,

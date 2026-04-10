@@ -1,6 +1,6 @@
 {
   "domain": "home_mind",
-  "name": "Home Mind",
+  "name": "HomeMind PRO",
   "codeowners": ["@hoornet"],
   "config_flow": true,
   "after_dependencies": ["hassio"],

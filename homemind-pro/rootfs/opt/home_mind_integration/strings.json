@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Configure Home Mind",
+        "title": "Configure HomeMind PRO",
         "description": "Enter the URL of your Home Mind API server. Don't have a server? Get a hosted one at [{cloud_url}]({cloud_url}).",
         "data": {
           "api_url": "API URL",
@@ -46,7 +46,7 @@
   "entity": {
     "conversation": {
       "home_mind": {
-        "name": "Home Mind"
+        "name": "HomeMind PRO"
       }
     }
   }
