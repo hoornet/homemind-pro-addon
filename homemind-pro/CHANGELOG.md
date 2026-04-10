@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.7
+
+- Add GitHub Actions CI/CD — builds and pushes multi-arch images on every push to master
+- Pre-built images published to `ghcr.io/hoornet/homemind-pro-{arch}` (amd64 + aarch64)
+- config.yaml now references pre-built GHCR images — faster installs, no local Docker build on HA
+- GHA build cache per arch reduces incremental build times
+
 ## 1.0.6
 
 - Fix config validation error when `llm_base_url` is empty (HA rejects empty string as invalid URL)

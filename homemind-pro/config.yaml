@@ -1,8 +1,9 @@
 name: "HomeMind PRO"
-version: "1.0.6"
+version: "1.0.7"
 slug: "homemind_pro"
 description: "AI assistant with cognitive memory for Home Assistant"
 url: "https://github.com/hoornet/homemind-pro-addon"
+image: ghcr.io/hoornet/homemind-pro-{arch}
 arch:
   - amd64
   - aarch64
