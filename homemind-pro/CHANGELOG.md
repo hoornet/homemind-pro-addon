@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.8
+
+- Rename integration display name to "HomeMind PRO" throughout the HA UI
+
 ## 1.0.7
 
 - Add GitHub Actions CI/CD — builds and pushes multi-arch images on every push to master
