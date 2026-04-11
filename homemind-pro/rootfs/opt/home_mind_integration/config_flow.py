@@ -98,13 +98,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return OptionsFlow()
 
     async def async_step_hassio(
-        self, discovery_info: dict[str, Any]
+        self, discovery_info: Any
     ) -> FlowResult:
         """Handle discovery from HomeMind PRO add-on."""
-        self._hassio_discovery = discovery_info
-        host = discovery_info.get("host", "")
-        port = discovery_info.get("port", 3100)
+        # discovery_info is a HassioServiceInfo object in HA 2023.6+
+        config = getattr(discovery_info, "config", discovery_info)
+        host = config.get("host", "") if hasattr(config, "get") else ""
+        port = config.get("port", 3100) if hasattr(config, "get") else 3100
         api_url = f"http://{host}:{port}"
+
+        self._hassio_discovery = {"host": host, "port": port}
 
         # Prevent duplicate entries for the same add-on
         await self.async_set_unique_id(f"homemind_addon_{host}")
@@ -119,7 +122,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             assert self._hassio_discovery is not None
             host = self._hassio_discovery["host"]
-            port = self._hassio_discovery.get("port", 3100)
+            port = self._hassio_discovery["port"]
             return self.async_create_entry(
                 title="HomeMind PRO",
                 data={
