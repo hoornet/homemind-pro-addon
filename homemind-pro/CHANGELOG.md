@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.9
+
+- Bump bundled server to v0.14.0 (auto-detect language, OpenRouter attribution, Shodh v0.1.91, security hardening)
+- Fix conversation agent entity name to "HomeMind PRO" in Assist
+
 ## 1.0.8
 
 - Rename integration display name to "HomeMind PRO" throughout the HA UI
