@@ -3,7 +3,6 @@
   "name": "HomeMind PRO",
   "codeowners": ["@hoornet"],
   "config_flow": true,
-  "hassio": ["home_mind"],
   "after_dependencies": ["hassio"],
   "dependencies": ["conversation"],
   "documentation": "https://github.com/hoornet/home-mind",
