@@ -9,11 +9,12 @@ import aiohttp
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import TextSelector, TextSelectorConfig, TextSelectorType
+from homeassistant.helpers.service_info.hassio import HassioServiceInfo
 
 from .const import (
     DOMAIN,
@@ -98,18 +99,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return OptionsFlow()
 
     async def async_step_hassio(
-        self, discovery_info: Any
-    ) -> FlowResult:
+        self, discovery_info: HassioServiceInfo
+    ) -> ConfigFlowResult:
         """Handle discovery from HomeMind PRO add-on."""
-        # discovery_info is a HassioServiceInfo object in HA 2023.6+
-        config = getattr(discovery_info, "config", discovery_info)
-        host = config.get("host", "") if hasattr(config, "get") else ""
-        port = config.get("port", 3100) if hasattr(config, "get") else 3100
+        config = discovery_info.config
+        host = config.get("host", "")
+        port = config.get("port", 3100)
         api_url = f"http://{host}:{port}"
 
         self._hassio_discovery = {"host": host, "port": port}
 
-        # Prevent duplicate entries for the same add-on
         await self.async_set_unique_id(f"homemind_addon_{host}")
         self._abort_if_unique_id_configured(updates={CONF_API_URL: api_url})
 
@@ -117,7 +116,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_hassio_confirm(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Confirm HomeMind PRO add-on discovery."""
         if user_input is not None:
             assert self._hassio_discovery is not None
@@ -135,7 +134,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
 
@@ -165,7 +164,7 @@ class OptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)

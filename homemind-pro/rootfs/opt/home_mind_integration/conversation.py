@@ -13,23 +13,17 @@ from homeassistant.components.conversation import (
     ConversationInput,
     ConversationResult,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import MATCH_ALL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, intent
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.util import ulid
 
+from . import HomeMindConfigEntry
 from .const import (
-    DOMAIN,
-    CONF_API_URL,
-    CONF_API_TOKEN,
-    CONF_USER_ID,
-    CONF_CUSTOM_PROMPT,
-    DEFAULT_USER_ID,
-    DEFAULT_TIMEOUT,
     API_CHAT_ENDPOINT,
+    CONF_CUSTOM_PROMPT,
+    DEFAULT_TIMEOUT,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -37,35 +31,32 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: HomeMindConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up conversation agent from a config entry."""
-    agent = HomeMindConversationAgent(hass, config_entry)
-    async_add_entities([agent])
+    async_add_entities([HomeMindConversationAgent(hass, config_entry)])
 
 
 class HomeMindConversationAgent(ConversationEntity):
     """Home Mind conversation agent."""
 
     _attr_has_entity_name = True
-    _attr_name = None
+    _attr_name = None  # entity name = device name
     _attr_supported_features = ConversationEntityFeature.CONTROL
+    _attr_translation_key = "home_mind"
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+    def __init__(self, hass: HomeAssistant, entry: HomeMindConfigEntry) -> None:
         """Initialize the agent."""
         self.hass = hass
         self.entry = entry
-        self._api_url = entry.data[CONF_API_URL].rstrip("/")
-        self._api_token = entry.data.get(CONF_API_TOKEN, "").strip() or None
-        self._default_user_id = entry.data.get(CONF_USER_ID, DEFAULT_USER_ID)
         self._session = async_get_clientsession(hass)
 
         self._attr_unique_id = entry.entry_id
         self._attr_device_info = dr.DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
-            name="Home Mind",
-            manufacturer="Home Mind",
+            identifiers={(entry.domain, entry.entry_id)},
+            name="HomeMind PRO",
+            manufacturer="HomeMind PRO",
             model="AI Assistant",
             entry_type=dr.DeviceEntryType.SERVICE,
         )
@@ -79,76 +70,64 @@ class HomeMindConversationAgent(ConversationEntity):
         """Process a conversation input and return a response."""
         _LOGGER.debug("Processing conversation input: %s", user_input.text)
 
-        # Get user ID from context if available, otherwise use default
-        user_id = self._default_user_id
+        data = self.entry.runtime_data
+        user_id = data.user_id
         if user_input.context and user_input.context.user_id:
             user_id = str(user_input.context.user_id)
 
-        # Determine if this is a voice request
-        is_voice = user_input.agent_id is not None
-
-        # Generate conversation ID if not provided
-        conversation_id = user_input.conversation_id or ulid.ulid_now()
+        conversation_id = user_input.conversation_id
 
         try:
             response_text = await self._call_api(
+                api_url=data.api_url,
+                api_token=data.api_token,
                 message=user_input.text,
                 user_id=user_id,
                 conversation_id=conversation_id,
-                is_voice=is_voice,
             )
-            _LOGGER.debug(
-                "Got response: %s", response_text[:100] if response_text else "None"
-            )
-
-            intent_response = intent.IntentResponse(language=user_input.language)
-            intent_response.async_set_speech(response_text)
-
-            return ConversationResult(
-                response=intent_response,
-                conversation_id=conversation_id,
-            )
-
-        except Exception as err:
-            _LOGGER.error("Error calling Home Mind API: %s", err, exc_info=True)
-
+        except (aiohttp.ClientError, TimeoutError) as err:
+            _LOGGER.error("Error calling Home Mind API: %s", err)
             intent_response = intent.IntentResponse(language=user_input.language)
             intent_response.async_set_error(
                 intent.IntentResponseErrorCode.UNKNOWN,
-                f"Sorry, I couldn't process that request: {err}",
+                "Sorry, I couldn't reach the HomeMind server right now.",
             )
-
             return ConversationResult(
                 response=intent_response,
                 conversation_id=conversation_id,
             )
 
+        intent_response = intent.IntentResponse(language=user_input.language)
+        intent_response.async_set_speech(response_text)
+        return ConversationResult(
+            response=intent_response,
+            conversation_id=conversation_id,
+        )
+
     async def _call_api(
         self,
+        api_url: str,
+        api_token: str | None,
         message: str,
         user_id: str,
-        conversation_id: str,
-        is_voice: bool = False,
+        conversation_id: str | None,
     ) -> str:
         """Call the Home Mind API."""
-        url = f"{self._api_url}{API_CHAT_ENDPOINT}"
+        url = f"{api_url}{API_CHAT_ENDPOINT}"
 
-        payload = {
+        payload: dict = {
             "message": message,
             "userId": user_id,
             "conversationId": conversation_id,
-            "isVoice": is_voice,
         }
 
         custom_prompt = self.entry.options.get(CONF_CUSTOM_PROMPT)
         if custom_prompt:
             payload["customPrompt"] = custom_prompt
 
-        headers = {}
-        if self._api_token:
-            headers["Authorization"] = f"Bearer {self._api_token}"
-
-        _LOGGER.debug("Calling Home Mind API: %s with payload: %s", url, payload)
+        headers: dict = {}
+        if api_token:
+            headers["Authorization"] = f"Bearer {api_token}"
 
         async with self._session.post(
             url,
@@ -157,8 +136,11 @@ class HomeMindConversationAgent(ConversationEntity):
             timeout=aiohttp.ClientTimeout(total=DEFAULT_TIMEOUT),
         ) as response:
             if response.status != 200:
-                error_text = await response.text()
-                raise Exception(f"API error {response.status}: {error_text}")
-
+                raise aiohttp.ClientResponseError(
+                    response.request_info,
+                    response.history,
+                    status=response.status,
+                    message=f"API error {response.status}",
+                )
             data = await response.json()
             return data.get("response") or "I received your request but got no response."

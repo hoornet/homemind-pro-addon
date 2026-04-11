@@ -2,49 +2,48 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
-
-if TYPE_CHECKING:
-    from homeassistant.helpers.typing import ConfigType
+from .const import CONF_API_TOKEN, CONF_API_URL, CONF_USER_ID, DEFAULT_USER_ID
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.CONVERSATION]
 
 
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the Home Mind component."""
-    hass.data.setdefault(DOMAIN, {})
-    return True
+@dataclass
+class HomeMindData:
+    """Runtime data for a HomeMind config entry."""
+
+    api_url: str
+    api_token: str | None
+    user_id: str
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+type HomeMindConfigEntry = ConfigEntry[HomeMindData]
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: HomeMindConfigEntry) -> bool:
     """Set up Home Mind from a config entry."""
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = entry.data
-
+    entry.runtime_data = HomeMindData(
+        api_url=entry.data.get(CONF_API_URL, "").rstrip("/"),
+        api_token=entry.data.get(CONF_API_TOKEN, "").strip() or None,
+        user_id=entry.data.get(CONF_USER_ID, DEFAULT_USER_ID),
+    )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
-
-    _LOGGER.info("Home Mind integration loaded")
     return True
 
 
-async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def _async_update_listener(hass: HomeAssistant, entry: HomeMindConfigEntry) -> None:
     """Reload the config entry when options change."""
     await hass.config_entries.async_reload(entry.entry_id)
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: HomeMindConfigEntry) -> bool:
     """Unload a config entry."""
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        hass.data[DOMAIN].pop(entry.entry_id)
-
-    return unload_ok
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
