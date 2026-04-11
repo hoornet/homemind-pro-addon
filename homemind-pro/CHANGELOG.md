@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.14
+
+- Auto-restart HA Core after integration install/update so discovery works without manual restart
+
 ## 1.0.13
 
 - Fix auto-update: keep integration manifest version in sync with add-on version
