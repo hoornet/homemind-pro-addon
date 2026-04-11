@@ -110,15 +110,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(f"homemind_addon_{host}")
         self._abort_if_unique_id_configured(updates={CONF_API_URL: api_url})
 
-        # Validate the discovered server is reachable
-        try:
-            await validate_input(self.hass, {
-                CONF_API_URL: api_url,
-                CONF_USER_ID: DEFAULT_USER_ID,
-            })
-        except (CannotConnect, InvalidAuth):
-            return self.async_abort(reason="cannot_connect")
-
         return await self.async_step_hassio_confirm()
 
     async def async_step_hassio_confirm(

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.10
+
+- Fix Supervisor discovery: wrap host/port in `config` key per HA API spec
+- Fix config_flow: skip connectivity check during hassio discovery (HA Core → add-on routing not available at config time)
+
 ## 1.0.9
 
 - Bump bundled server to v0.14.0 (auto-detect language, OpenRouter attribution, Shodh v0.1.91, security hardening)

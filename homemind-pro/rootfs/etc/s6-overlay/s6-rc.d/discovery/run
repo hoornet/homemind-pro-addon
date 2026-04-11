@@ -30,10 +30,10 @@ done
 ADDON_HOST=$(hostname)
 
 echo "[discovery] Sending discovery to Supervisor (host=${ADDON_HOST}, port=3100)..."
-RESPONSE=$(curl -sf -X POST \
+RESPONSE=$(curl -s -X POST \
     -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
     -H "Content-Type: application/json" \
-    -d "{\"service\":\"home_mind\",\"addon\":\"homemind_pro\",\"host\":\"${ADDON_HOST}\",\"port\":3100}" \
+    -d "{\"service\":\"home_mind\",\"config\":{\"host\":\"${ADDON_HOST}\",\"port\":3100}}" \
     http://supervisor/discovery 2>&1) || true
 
 echo "[discovery] Supervisor response: ${RESPONSE:-no response}"
