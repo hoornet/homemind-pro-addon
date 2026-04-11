@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.12
+
+- Modernise integration for HA 2026: use runtime_data, ConfigFlowResult, typed HassioServiceInfo
+- Fix device name showing as "Home Mind" instead of "HomeMind PRO"
+- Fix error responses leaking internal details to voice/text output
+- Remove broken is_voice heuristic
+
 ## 1.0.11
 
 - Fix integration auto-discovery: add `hassio` field to manifest.json so HA Core routes Supervisor discovery to our config flow
