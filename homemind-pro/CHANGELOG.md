@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.13
+
+- Fix auto-update: keep integration manifest version in sync with add-on version
+
 ## 1.0.12
 
 - Modernise integration for HA 2026: use runtime_data, ConfigFlowResult, typed HassioServiceInfo
