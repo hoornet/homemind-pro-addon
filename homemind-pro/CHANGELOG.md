@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.11
+
+- Fix integration auto-discovery: add `hassio` field to manifest.json so HA Core routes Supervisor discovery to our config flow
+
 ## 1.0.10
 
 - Fix Supervisor discovery: wrap host/port in `config` key per HA API spec

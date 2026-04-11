@@ -3,11 +3,12 @@
   "name": "HomeMind PRO",
   "codeowners": ["@hoornet"],
   "config_flow": true,
+  "hassio": ["home_mind"],
   "after_dependencies": ["hassio"],
   "dependencies": ["conversation"],
   "documentation": "https://github.com/hoornet/home-mind",
   "integration_type": "service",
   "iot_class": "local_polling",
   "requirements": ["aiohttp>=3.8.0"],
-  "version": "0.10.0"
+  "version": "1.0.10"
 }
