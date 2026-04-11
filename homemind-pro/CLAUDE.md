@@ -187,10 +187,14 @@ Users add `https://github.com/hoornet/homemind-pro-addon` as a custom repository
 
 The add-on has its own semver (1.0.0+), independent of the server version. CHANGELOG notes which server version (submodule tag) is bundled.
 
+**IMPORTANT:** Every push to master that changes any file must bump the version in `homemind-pro/config.yaml`. HA compares this version number to detect updates — if the version doesn't change, users never see an update available, regardless of what was changed. Always bump version + add CHANGELOG entry before pushing.
+
+**IMPORTANT:** The `version` field in `rootfs/opt/home_mind_integration/manifest.json` must always match the add-on version in `config.yaml`. The `install-integration` s6 script compares these two versions to decide whether to overwrite the integration files on disk — if they match, the update is skipped and users keep running stale integration code.
+
 ## Related Projects (on this machine)
 
-- `/home/hoornet/projects/home-mind` — Server source (AGPL, submodule origin)
-- `/home/hoornet/projects/home-mind-hacs` — Companion HACS integration
-- `/home/hoornet/projects/home-mind-proxy` — Cloud LLM proxy (proprietary)
-- `/home/hoornet/projects/home-mind-cloud` — Cloud provisioner (proprietary)
-- `/home/hoornet/projects/home-mind-app` — PWA app (proprietary)
+- `/home/hoornet/projects/homemind-projects/home-mind` — Server source (AGPL, submodule origin)
+- `/home/hoornet/projects/homemind-projects/home-mind-hacs` — Companion HACS integration
+- `/home/hoornet/projects/homemind-projects/home-mind-proxy` — Cloud LLM proxy (proprietary)
+- `/home/hoornet/projects/homemind-projects/home-mind-cloud` — Cloud provisioner (proprietary)
+- `/home/hoornet/projects/homemind-projects/home-mind-app` — PWA app (proprietary)
