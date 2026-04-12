@@ -23,13 +23,13 @@ fi
 
 SHODH_KEY=$(cat /data/.shodh_key)
 
-# Read options
+# Read options (nested cloud/byok structure)
 LLM_MODE=$(jq -r '.llm_mode // "cloud"' "$OPTIONS")
-PROXY_KEY=$(jq -r '.proxy_api_key // ""' "$OPTIONS")
-LLM_PROVIDER=$(jq -r '.llm_provider // "anthropic"' "$OPTIONS")
-LLM_API_KEY=$(jq -r '.llm_api_key // ""' "$OPTIONS")
-LLM_MODEL=$(jq -r '.llm_model // ""' "$OPTIONS")
-LLM_BASE_URL=$(jq -r '.llm_base_url // ""' "$OPTIONS")
+PROXY_KEY=$(jq -r '.cloud.api_key // ""' "$OPTIONS")
+LLM_PROVIDER=$(jq -r '.byok.provider // "anthropic"' "$OPTIONS")
+LLM_API_KEY=$(jq -r '.byok.api_key // ""' "$OPTIONS")
+LLM_MODEL=$(jq -r '.byok.model // ""' "$OPTIONS")
+LLM_BASE_URL=$(jq -r '.byok.base_url // ""' "$OPTIONS")
 CUSTOM_PROMPT=$(jq -r '.custom_prompt // ""' "$OPTIONS")
 LOG_LEVEL=$(jq -r '.log_level // "info"' "$OPTIONS")
 

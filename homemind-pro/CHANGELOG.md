@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.17
+
+- Restructure configuration into clear Cloud and BYOK sections — no more overlapping fields
+- Fix all "Home Mind" references to "HomeMind PRO" throughout docs and UI
+- Restructure DOCS.md with separate Cloud and BYOK setup guides
+
 ## 1.0.16
 
 - Pre-download MiniLM-L6-v2 ONNX model into Docker image — Shodh now uses full semantic search instead of falling back to hash-based embeddings

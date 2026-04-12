@@ -2,35 +2,41 @@ configuration:
   llm_mode:
     name: LLM Mode
     description: >-
-      "cloud" uses HomeMind's managed AI service (requires a Cloud API Key from homemind.veganostr.com).
-      "byok" lets you use your own API key from Anthropic, OpenAI, OpenRouter, or a local Ollama instance.
-  proxy_api_key:
-    name: Cloud API Key
+      Choose "cloud" to use HomeMind PRO's managed AI service, or "byok" to bring your own API key.
+  cloud:
+    name: "HomeMind PRO Cloud"
     description: >-
-      Your HomeMind Cloud API key. Get one at homemind.veganostr.com.
-      Only needed when LLM Mode is "cloud".
-  llm_provider:
-    name: LLM Provider
+      Settings for HomeMind PRO Cloud mode. Get your API key at homemind.veganostr.com.
+    api_key:
+      name: HomeMind PRO API Key
+      description: >-
+        Your HomeMind PRO API key from homemind.veganostr.com. Required when LLM Mode is "cloud".
+  byok:
+    name: "Bring Your Own Key (BYOK)"
     description: >-
-      Which LLM backend to use. Only applies when LLM Mode is "byok".
-      OpenRouter gives access to many models (Anthropic, OpenAI, etc.) with a single key.
-  llm_api_key:
-    name: API Key
-    description: >-
-      Your API key for the selected provider. Only needed when LLM Mode is "byok".
-  llm_model:
-    name: Model
-    description: >-
-      Model ID. Examples: anthropic/claude-haiku-4.5 (OpenRouter), claude-haiku-4-5-20251001 (Anthropic),
-      gpt-4o-mini (OpenAI). Leave empty for provider default.
-  llm_base_url:
-    name: API Base URL
-    description: >-
-      Custom API endpoint. For OpenAI-compatible APIs or Ollama. Leave empty for default.
+      Settings for using your own API key. Only used when LLM Mode is "byok".
+    provider:
+      name: Provider
+      description: >-
+        Which LLM provider to use. OpenRouter gives access to many models with a single key.
+    api_key:
+      name: API Key
+      description: >-
+        Your API key for the selected provider.
+    model:
+      name: Model
+      description: >-
+        Model ID to use. Examples: anthropic/claude-haiku-4.5 (OpenRouter),
+        claude-haiku-4-5-20251001 (Anthropic), gpt-4o-mini (OpenAI). Leave empty for provider default.
+    base_url:
+      name: API Base URL
+      description: >-
+        Custom API endpoint. Required for Ollama (e.g. http://homeassistant:11434/v1).
+        Leave empty for cloud providers.
   custom_prompt:
     name: Custom Prompt
     description: >-
-      Override the AI assistant's personality and instructions. Leave empty for the default Home Mind persona.
+      Override the AI assistant's personality and instructions. Leave empty for the default HomeMind PRO persona.
   log_level:
     name: Log Level
     description: >-
