@@ -12,6 +12,7 @@ mkdir -p /data/shodh
 echo "[shodh] Starting Shodh Memory on port 3030..."
 export SHODH_DEV_API_KEY="$SHODH_KEY"
 export LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH:-}"
+export SHODH_OFFLINE=true  # model pre-downloaded into image, no runtime download needed
 exec /usr/local/bin/shodh server \
     --host 127.0.0.1 \
     --port 3030 \

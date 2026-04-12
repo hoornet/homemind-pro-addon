@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.16
+
+- Pre-download MiniLM-L6-v2 ONNX model into Docker image — Shodh now uses full semantic search instead of falling back to hash-based embeddings
+
 ## 1.0.15
 
 - When monthly usage limit is reached, show a persistent HA notification and return a clear spoken message instead of a generic error

@@ -24,6 +24,14 @@ RUN ARCH=$(uname -m) \
     && chmod +x /usr/local/bin/shodh \
     && rm -rf /tmp/shodh /tmp/shodh.tar.gz
 
+# Pre-download MiniLM-L6-v2 ONNX model (pinned commit, same URLs Shodh uses)
+# Saves as model_quantized.onnx matching Shodh's expected filename
+RUN mkdir -p /root/.cache/shodh-memory/models/minilm-l6 \
+    && curl -fsSL "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/onnx/model_quint8_avx2.onnx" \
+       -o /root/.cache/shodh-memory/models/minilm-l6/model_quantized.onnx \
+    && curl -fsSL "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/c9745ed1d9f207416be6d2e6f8de32d1f16199bf/tokenizer.json" \
+       -o /root/.cache/shodh-memory/models/minilm-l6/tokenizer.json
+
 # -------------------------------------------------------------------
 # Stage 2: Build home-mind-server from vendored source
 # -------------------------------------------------------------------
@@ -83,9 +91,10 @@ RUN curl -fsSL https://github.com/hassio-addons/bashio/archive/refs/tags/v0.16.2
     && ln -s /usr/lib/bashio/bashio /usr/bin/bashio \
     && rm -rf bashio-0.16.2
 
-# Copy Shodh binary and ONNX runtime from stage 1
+# Copy Shodh binary, ONNX runtime, and pre-downloaded model from stage 1
 COPY --from=shodh /usr/local/bin/shodh /usr/local/bin/shodh
 COPY --from=shodh /usr/local/lib/libonnxruntime* /usr/local/lib/
+COPY --from=shodh /root/.cache/shodh-memory /root/.cache/shodh-memory
 RUN ldconfig
 
 # Copy built server from stage 2
