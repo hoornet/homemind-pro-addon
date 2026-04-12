@@ -19,7 +19,7 @@ HomeMind PRO bundles two services in one add-on:
 
 ---
 
-## Cloud Mode (Recommended)
+## Cloud Mode (easiest setup)
 
 Use HomeMind PRO's managed AI service. You get a monthly token budget — no API key management, no surprise bills.
 
@@ -99,7 +99,7 @@ All data stays on your device:
 - Conversations stored in `/data/conversations.db`
 - Memories stored in `/data/shodh/`
 - No telemetry, no cloud dependency (in BYOK mode)
-- In Cloud mode, LLM calls go directly to OpenRouter — your HA data never leaves your network
+- In Cloud mode, only your conversation text is sent to the AI — your HA data never leaves your network
 
 ## Troubleshooting
 
