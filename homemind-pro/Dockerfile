@@ -104,7 +104,7 @@ COPY --from=builder /build/node_modules ./node_modules
 COPY --from=builder /build/package.json ./
 
 # Copy s6-overlay service definitions and scripts
-COPY rootfs /
+COPY homemind-pro/rootfs /
 
 # Ensure all scripts are executable
 RUN find /etc/s6-overlay -name 'run' -exec chmod +x {} \; \

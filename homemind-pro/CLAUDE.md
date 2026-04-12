@@ -140,8 +140,8 @@ The official Docker image (`varunshodh/shodh-memory:latest`) is amd64 only. This
 ### Local Build
 
 ```bash
-cd homemind-pro
-docker build -t homemind-pro:local .
+# Run from repo root (context must be root so server/ is accessible)
+docker build -t homemind-pro:local -f homemind-pro/Dockerfile .
 ```
 
 ### Local Test (standalone, without HA Supervisor)
