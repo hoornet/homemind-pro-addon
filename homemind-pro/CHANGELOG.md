@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.15
+
+- When monthly usage limit is reached, show a persistent HA notification and return a clear spoken message instead of a generic error
+
 ## 1.0.14
 
 - Auto-restart HA Core after integration install/update so discovery works without manual restart

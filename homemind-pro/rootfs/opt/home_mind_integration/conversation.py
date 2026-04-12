@@ -29,6 +29,10 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
+class UsageLimitError(Exception):
+    """Raised when the HomeMind server returns HTTP 402 (usage limit reached)."""
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: HomeMindConfigEntry,
@@ -85,6 +89,29 @@ class HomeMindConversationAgent(ConversationEntity):
                 user_id=user_id,
                 conversation_id=conversation_id,
             )
+        except UsageLimitError:
+            _LOGGER.warning("HomeMind PRO usage limit reached")
+            await self.hass.services.async_call(
+                "persistent_notification",
+                "create",
+                {
+                    "title": "HomeMind PRO — Usage Limit Reached",
+                    "message": (
+                        "Your monthly usage allowance is depleted. "
+                        "Visit homemind.veganostr.com to renew or upgrade."
+                    ),
+                    "notification_id": "homemind_usage_limit",
+                },
+            )
+            intent_response = intent.IntentResponse(language=user_input.language)
+            intent_response.async_set_speech(
+                "Your monthly token allowance is depleted. "
+                "Please visit homemind.veganostr.com to renew or upgrade."
+            )
+            return ConversationResult(
+                response=intent_response,
+                conversation_id=conversation_id,
+            )
         except (aiohttp.ClientError, TimeoutError) as err:
             _LOGGER.error("Error calling Home Mind API: %s", err)
             intent_response = intent.IntentResponse(language=user_input.language)
@@ -135,6 +162,8 @@ class HomeMindConversationAgent(ConversationEntity):
             headers=headers,
             timeout=aiohttp.ClientTimeout(total=DEFAULT_TIMEOUT),
         ) as response:
+            if response.status == 402:
+                raise UsageLimitError()
             if response.status != 200:
                 raise aiohttp.ClientResponseError(
                     response.request_info,
