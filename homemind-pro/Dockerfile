@@ -25,27 +25,18 @@ RUN ARCH=$(uname -m) \
     && rm -rf /tmp/shodh /tmp/shodh.tar.gz
 
 # -------------------------------------------------------------------
-# Stage 2: Build home-mind-server from GitHub
+# Stage 2: Build home-mind-server from vendored source
 # -------------------------------------------------------------------
 FROM node:22-bookworm-slim AS builder
 
-ARG HOME_MIND_VERSION=v0.14.0
-
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /build
 
-# Clone the server source at a pinned tag
-RUN git clone --depth 1 --branch ${HOME_MIND_VERSION} \
-    https://github.com/hoornet/home-mind.git /tmp/home-mind
-
-# Build the server
-RUN cp /tmp/home-mind/src/home-mind-server/package*.json ./ \
-    && npm ci \
-    && cp -r /tmp/home-mind/src/home-mind-server/src ./src \
-    && cp /tmp/home-mind/src/home-mind-server/tsconfig.json ./ \
-    && npx tsc
+# Copy vendored server source (no external git clone needed)
+COPY server/src/home-mind-server/package*.json ./
+RUN npm ci
+COPY server/src/home-mind-server/src ./src
+COPY server/src/home-mind-server/tsconfig.json ./
+RUN npx tsc
 
 # Production dependencies only
 RUN rm -rf node_modules && npm ci --omit=dev

@@ -1,0 +1,10 @@
+# Vendored server source — ignore build artifacts and dev state
+src/home-mind-server/node_modules/
+src/home-mind-server/dist/
+src/home-mind-server/coverage/
+src/home-mind-server/data/
+src/home-mind-server/.env
+.omc/
+.claude/
+.playwright-mcp/
+jure-private/

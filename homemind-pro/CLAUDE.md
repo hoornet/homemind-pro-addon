@@ -12,21 +12,22 @@ This is the turnkey product version of Home Mind. Users install one add-on and g
 
 ## License & Source Boundaries
 
-This repo is **AGPL-3.0** (same as home-mind) because it bundles AGPL code via git submodule.
+This repo is **AGPL-3.0**. The server code is vendored directly in `server/` (no submodule).
 
 | Repo | License | Visibility | Relationship |
 |------|---------|------------|-------------|
-| `homemind-pro-addon` | AGPL-3.0 | **Public** | **This repo** — HA add-on packaging |
-| `home-mind` | AGPL-3.0 | **Public** | Server code (git submodule at `server/`) |
-| `home-mind-hacs` | AGPL-3.0 | **Public** | Companion integration (separate repo) |
+| `homemind-pro-addon` | AGPL-3.0 | **Public** | **This repo** — HA add-on + vendored server |
+| `home-mind` | AGPL-3.0 | **Public** | OSS origin of server code (now independent) |
+| `home-mind-hacs` | AGPL-3.0 | **Public** | LEGACY — integration now lives in rootfs/ |
 | `home-mind-proxy` | Proprietary | **Private** | Cloud LLM metering proxy (VPS service) |
 | `home-mind-cloud` | Proprietary | **Private** | Cloud signup/billing |
 | `home-mind-app` | Proprietary | **Private** | PWA frontend |
 
 **Critical rules:**
 - Never add proprietary code from closed-source repos
-- The server submodule must stay at a tagged release — don't point at arbitrary commits
+- `server/` is a vendored copy of home-mind — edit it directly here, do NOT sync back to home-mind
 - The proxy URL in options-to-env.sh is the only reference to the cloud service
+- To update server code: edit `server/src/home-mind-server/` directly in this repo
 
 ## Architecture
 
@@ -91,7 +92,7 @@ homemind-pro/
       user/contents.d/             # Bundle definition (which services to start)
     usr/local/bin/
       options-to-env.sh            # Config bridge script
-server/                            # Git submodule → github.com/hoornet/home-mind
+server/                            # Vendored server source (was git submodule, now independent)
 ```
 
 ## Shodh Memory
@@ -155,16 +156,10 @@ docker run --rm \
 
 Note: Without a real Supervisor, HA API calls will fail. The server still starts and responds to chat (LLM calls work independently).
 
-### Updating Server Submodule
+### Updating Server Code
 
-```bash
-cd server
-git fetch
-git checkout v0.14.0  # or whatever tag
-cd ..
-git add server
-git commit -m "Update server to v0.14.0"
-```
+Edit `server/src/home-mind-server/` directly. The server is now vendored — no submodule to update.
+To pull in a specific fix from the OSS `home-mind` repo, cherry-pick or manually copy the relevant files.
 
 ### Testing on Real HA
 

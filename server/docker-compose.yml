@@ -1,0 +1,103 @@
+# Home Mind - Docker Compose
+# AI assistant for Home Assistant with cognitive memory
+
+services:
+  # Shodh Memory - Cognitive memory backend
+  shodh:
+    build:
+      context: ./docker/shodh
+    container_name: home-mind-shodh
+    restart: unless-stopped
+    environment:
+      - SHODH_HOST=0.0.0.0
+      - SHODH_PORT=3030
+      - SHODH_DEV_API_KEY=${SHODH_API_KEY}
+    volumes:
+      - ${SHODH_DATA_PATH:-shodh_data}:/data
+    ports:
+      - "3030:3030"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3030/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - home-mind
+
+  # Home Mind App - PWA frontend
+  app:
+    build:
+      context: ../home-mind-app
+      args:
+        VITE_DEFAULT_SERVER_URL: ${VITE_DEFAULT_SERVER_URL:-}
+        VITE_DEFAULT_API_TOKEN: ${VITE_DEFAULT_API_TOKEN:-}
+    container_name: home-mind-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-4174}:80"
+    networks:
+      - home-mind
+
+  # Home Mind Server - API server
+  server:
+    build:
+      context: ./src/home-mind-server
+    container_name: home-mind-server
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3100}:3100"
+    environment:
+      - PORT=3100
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LLM_PROVIDER=${LLM_PROVIDER:-anthropic}
+      - LLM_MODEL=${LLM_MODEL:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
+      - HA_URL=${HA_URL}
+      - HA_TOKEN=${HA_TOKEN}
+      - HA_SKIP_TLS_VERIFY=${HA_SKIP_TLS_VERIFY:-false}
+      - SHODH_URL=http://shodh:3030
+      - SHODH_API_KEY=${SHODH_API_KEY}
+      - MEMORY_TOKEN_LIMIT=${MEMORY_TOKEN_LIMIT:-1500}
+      - CONVERSATION_STORAGE=${CONVERSATION_STORAGE:-memory}
+      - CONVERSATION_DB_PATH=/data/conversations.db
+      - CUSTOM_PROMPT=${CUSTOM_PROMPT:-}
+      - DEVICE_OVERRIDES=${DEVICE_OVERRIDES:-}
+      - CORS_ORIGINS=${CORS_ORIGINS:-}
+      - API_TOKEN=${API_TOKEN:-}
+      - STT_PROVIDER=${STT_PROVIDER:-none}
+      - STT_API_KEY=${STT_API_KEY:-}
+      - STT_BASE_URL=${STT_BASE_URL:-}
+      - STT_MODEL=${STT_MODEL:-}
+      - TTS_PROVIDER=${TTS_PROVIDER:-none}
+      - TTS_API_KEY=${TTS_API_KEY:-}
+      - TTS_BASE_URL=${TTS_BASE_URL:-}
+      - TTS_MODEL=${TTS_MODEL:-tts-1}
+      - TTS_VOICE=${TTS_VOICE:-alloy}
+      - TZ=${TZ:-Europe/Prague}
+    volumes:
+      - conversation_data:/data
+    depends_on:
+      shodh:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - home-mind
+
+volumes:
+  shodh_data:
+    driver: local
+  conversation_data:
+    driver: local
+
+networks:
+  home-mind:
+    driver: bridge
