@@ -6,8 +6,8 @@ AI assistant with cognitive memory for Home Assistant. Talk to your smart home n
 
 1. Install this add-on
 2. Choose your LLM mode in the Configuration tab:
-   - **Cloud**: Paste your HomeMind Cloud API key (get one at [homemind.veganostr.com](https://homemind.veganostr.com))
-   - **BYOK**: Select your provider (Anthropic, OpenAI, or Ollama) and paste your API key
+   - **Cloud**: Paste your HomeMind PRO API key (get one at [homemind.veganostr.com](https://homemind.veganostr.com))
+   - **BYOK**: Select your provider and paste your own API key
 3. Start the add-on
 4. Go to **Settings > Voice assistants** and select "Home Mind" as your conversation agent
 5. Talk to your home via Assist!
@@ -21,20 +21,21 @@ HomeMind PRO bundles two services in one add-on:
 
 ## LLM Modes
 
-### Cloud Mode (Recommended for getting started)
+### Cloud Mode (Recommended)
 
-Uses HomeMind's managed LLM service. You get a monthly token budget — no API key management, no surprise bills.
+Uses HomeMind's managed LLM service. You get a monthly token budget per tier — no API key management, no surprise bills.
 
 1. Sign up at [homemind.veganostr.com](https://homemind.veganostr.com)
-2. Choose a tier (Lite or Standard)
-3. Paste your proxy API key in the add-on configuration
+2. Choose a tier (Starter, Standard, or Advanced)
+3. Paste your HomeMind PRO API key in the add-on configuration
 
 ### BYOK Mode (Bring Your Own Key)
 
 Use your own API key from:
 
-- **Anthropic** — Claude models (recommended: claude-haiku-4-5-20251001)
+- **Anthropic** — Claude models
 - **OpenAI** — GPT models
+- **OpenRouter** — Access to many models via a single key
 - **Ollama** — Local models (requires Ollama running on your network)
 
 ## Configuration
@@ -42,19 +43,21 @@ Use your own API key from:
 | Option | Description |
 |--------|-------------|
 | LLM Mode | `cloud` (managed) or `byok` (your own key) |
-| Cloud API Key | Your HomeMind proxy key (cloud mode only) |
-| LLM Provider | anthropic, openai, or ollama (byok mode only) |
+| Cloud API Key | Your HomeMind PRO API key (cloud mode only) |
+| LLM Provider | anthropic, openai, openrouter, or ollama (byok mode only) |
 | API Key | Your provider API key (byok mode only) |
-| Model | Model ID (leave empty for default) |
+| Model | Model ID (leave empty for provider default) |
 | API Base URL | Custom endpoint for OpenAI-compatible APIs or Ollama |
 | Custom Prompt | Override the assistant's personality |
 | Log Level | debug, info, warn, or error |
 
 ## Companion Integration
 
-This add-on works with the **Home Mind** HACS integration, which registers as a conversation agent in Home Assistant. The integration is auto-discovered when the add-on starts.
+The **Home Mind** conversation agent integration is automatically installed when the add-on starts. No manual installation needed.
 
-If auto-discovery doesn't work, install the integration manually via HACS and point it to `http://local-homemind-pro:3100`.
+After the add-on starts, go to **Settings > Voice assistants** and select "Home Mind" as your conversation agent.
+
+If the integration doesn't appear, restart Home Assistant Core once — the add-on installs it on startup.
 
 ## Data & Privacy
 
@@ -62,7 +65,7 @@ All data stays on your device:
 - Conversations stored in `/data/conversations.db`
 - Memories stored in `/data/shodh/`
 - No telemetry, no cloud dependency (in BYOK mode)
-- In Cloud mode, only LLM API calls go through the proxy — your HA data never leaves your network
+- In Cloud mode, LLM calls go directly to OpenRouter — your HA data never leaves your network
 
 ## Troubleshooting
 
@@ -74,4 +77,4 @@ All data stays on your device:
 ## Support
 
 - [GitHub Issues](https://github.com/hoornet/homemind-pro-addon/issues)
-- [Home Mind Documentation](https://github.com/hoornet/home-mind/wiki)
+- [homemind.veganostr.com](https://homemind.veganostr.com)
