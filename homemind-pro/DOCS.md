@@ -25,7 +25,7 @@ Use HomeMind PRO's managed AI service. You get a monthly token budget — no API
 
 ### Setup
 
-1. Sign up at [homemind.veganostr.com](https://homemind.veganostr.com) and choose a tier (Starter, Standard, or Advanced)
+1. Sign up at [homemindpro.com](https://homemindpro.com) and choose a tier (Starter, Standard, or Advanced)
 2. Copy your **HomeMind PRO API Key** from your dashboard
 3. In the add-on Configuration tab:
    - Set **LLM Mode** to `cloud`
@@ -37,7 +37,7 @@ Use HomeMind PRO's managed AI service. You get a monthly token budget — no API
 | Option | Description |
 |--------|-------------|
 | LLM Mode | Set to `cloud` |
-| HomeMind PRO API Key | Your key from homemind.veganostr.com |
+| HomeMind PRO API Key | Your key from homemindpro.com |
 
 ---
 
@@ -111,4 +111,4 @@ All data stays on your device:
 ## Support
 
 - [GitHub Issues](https://github.com/hoornet/homemind-pro-addon/issues)
-- [homemind.veganostr.com](https://homemind.veganostr.com)
+- [homemindpro.com](https://homemindpro.com)

@@ -6,11 +6,11 @@ configuration:
   cloud:
     name: "HomeMind PRO Cloud"
     description: >-
-      Settings for HomeMind PRO Cloud mode. Get your API key at homemind.veganostr.com.
+      Settings for HomeMind PRO Cloud mode. Get your API key at homemindpro.com.
     api_key:
       name: HomeMind PRO API Key
       description: >-
-        Your HomeMind PRO API key from homemind.veganostr.com. Required when LLM Mode is "cloud".
+        Your HomeMind PRO API key from homemindpro.com. Required when LLM Mode is "cloud".
   byok:
     name: "Bring Your Own Key (BYOK)"
     description: >-

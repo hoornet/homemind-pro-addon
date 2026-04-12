@@ -12,7 +12,7 @@ export class OpenAIFactExtractor implements IFactExtractor {
       apiKey,
       baseURL: baseUrl,
       defaultHeaders: {
-        "HTTP-Referer": "https://homemind.veganostr.com",
+        "HTTP-Referer": "https://homemindpro.com",
         "X-Title": "HomeMind PRO",
       },
     });
