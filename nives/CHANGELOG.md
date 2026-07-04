@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.3.1
+
+- Routine dependency refresh for the bundled server (Anthropic and OpenAI clients, networking libraries, and build tooling). No change in behaviour — quiet housekeeping.
+
 ## 2.3.0
 
 - **Nives can now look at images.** AI Task (`ai_task.generate_data`) accepts image attachments — e.g. hand it a camera snapshot and ask "is this expected?" and Nives reasons about what it sees, with your home's context. Great for smart, low-false-alarm camera/doorbell notifications. (Requires a vision-capable model — all Premium models and most Standard ones qualify.)
