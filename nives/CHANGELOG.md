@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.3.2
+
+- Routine dependency refresh for the bundled server (Anthropic and OpenAI clients, networking library, and build tooling). No change in behaviour — quiet housekeeping.
+
 ## 2.3.1
 
 - Routine dependency refresh for the bundled server (Anthropic and OpenAI clients, networking libraries, and build tooling). No change in behaviour — quiet housekeeping.
