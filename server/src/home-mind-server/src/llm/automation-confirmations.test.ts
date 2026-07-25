@@ -48,6 +48,24 @@ describe("automation confirmations", () => {
     expect(isConfirmed(conv, "create_automation", create(), "turn-3")).toBe(false);
   });
 
+  it("does NOT confirm a create for a DIFFERENT automation than the one previewed", () => {
+    // Regression: create had no identity key, so any create in a later turn
+    // confirmed any earlier create preview. "Porch light at sunset?" → preview →
+    // "no, forget it, turn the heating off at 11pm instead" used to commit the
+    // heating automation without ever asking.
+    recordPreview(conv, "create_automation", create({ alias: "Porch light at sunset" }), "turn-1");
+    expect(
+      isConfirmed(conv, "create_automation", create({ alias: "Heating off at 11pm" }), "turn-2")
+    ).toBe(false);
+  });
+
+  it("confirms a create whose alias only differs by the auto prefix or casing", () => {
+    recordPreview(conv, "create_automation", create({ alias: "Porch light at sunset" }), "turn-1");
+    expect(
+      isConfirmed(conv, "create_automation", create({ alias: "Nives: porch light at sunset" }), "turn-2")
+    ).toBe(true);
+  });
+
   it("does not confirm across different tools", () => {
     recordPreview(conv, "create_automation", create(), "turn-1");
     expect(isConfirmed(conv, "delete_automation", { entity_id: "automation.x" }, "turn-2")).toBe(false);

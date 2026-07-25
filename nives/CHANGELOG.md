@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.3.3
+
+- **Confirmations are now tied to the specific automation.** If you ask for one automation, then change your mind and ask for a different one instead, Nives asks about the new one before creating it rather than treating your earlier request as already answered.
+- **Long-running requests now always come back with an answer.** If a request keeps needing more information, Nives now wraps up and replies in words instead of continuing to work in the background — so you get a response, and it doesn't quietly use up your allowance.
+- **More forgiving when a model replies imperfectly.** A garbled device command from the AI is now handled and retried instead of ending the whole request.
+- **Long-term memory tidying now runs as intended.** The routine that clears out stale or low-value memories was only running for people who had chatted in the last day; it now covers everyone.
+- **Clearer setup with your own API key.** If you choose OpenAI or Ollama and leave Model blank, Nives now picks a sensible default (OpenAI) or tells you exactly what to fill in (Ollama), instead of failing with a confusing "model not found".
+- Memory-usage monitoring for the Shodh memory service now reports in the add-on log.
+- Routine dependency and CI refresh for the bundled server (Anthropic and OpenAI clients, networking and request-parsing libraries). No change in behaviour — quiet housekeeping.
+
 ## 2.3.2
 
 - Routine dependency refresh for the bundled server (Anthropic and OpenAI clients, networking library, and build tooling). No change in behaviour — quiet housekeeping.

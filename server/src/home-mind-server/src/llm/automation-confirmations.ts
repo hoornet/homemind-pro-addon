@@ -10,12 +10,13 @@
  *    fingerprinting the full payload almost never matches across turns → endless
  *    re-preview loop. [killed v2.1.10]
  *
- * So: the confirmation signal is simply "the same tool was previewed for this
- * conversation in an EARLIER turn" (i.e. the user has since replied). We do NOT
- * compare the reformatted payload. For destructive update/delete we additionally
- * scope by entity_id (a stable string the model doesn't reformat) so confirming
- * one automation can't accidentally act on a different one. The per-turn nonce
- * still blocks confirming in the same turn a preview was shown.
+ * So: the confirmation signal is "the same tool was previewed for this
+ * conversation in an EARLIER turn" (i.e. the user has since replied), scoped by
+ * one stable identity string that the model does NOT reformat — entity_id for
+ * update/delete, the normalized alias for create — so confirming one automation
+ * can't accidentally act on a different one. The full payload is still never
+ * compared. The per-turn nonce blocks confirming in the same turn a preview was
+ * shown.
  */
 
 interface PendingPreview {
@@ -35,10 +36,37 @@ function pruneExpired(now: number): void {
   }
 }
 
-/** Stable identity for a change: create has none; update/delete are keyed by entity_id. */
+/**
+ * Normalize an alias down to the part the model keeps stable across turns.
+ * It reliably reformats structure (trigger/action shape) but echoes the alias
+ * back as words; the two observed drifts are the auto-added "Nives: " prefix
+ * and casing, both of which this strips.
+ */
+function normalizeAlias(alias: unknown): string {
+  return String(alias ?? "")
+    .trim()
+    .replace(/^nives:\s*/i, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+/**
+ * Stable identity for a change. update/delete are keyed by entity_id; create is
+ * keyed by normalized alias.
+ *
+ * Create used to have no identity at all, which meant ANY create in a later turn
+ * confirmed ANY earlier create preview: "make a sunset light automation" →
+ * preview → "no, forget it, turn the heating off at 11pm instead" → committed
+ * the heating automation without ever asking. Scoping by alias closes that
+ * without reintroducing the v2.1.10 payload-fingerprint loop — a mismatch just
+ * re-previews (one extra confirmation prompt), it does not fail.
+ */
 function identityKey(toolName: string, input: Record<string, unknown>): string {
   if (toolName === "update_automation" || toolName === "delete_automation") {
     return String(input.entity_id ?? "").trim();
+  }
+  if (toolName === "create_automation") {
+    return normalizeAlias(input.alias);
   }
   return "";
 }

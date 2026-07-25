@@ -5,11 +5,18 @@
 
 MAX_RSS_KB=524288  # 512MB
 
+# Match the binary as it is actually launched: /usr/local/bin/shodh server ...
+# The old pattern was "shodh-memory", which appears nowhere in that command line,
+# so the watchdog matched nothing and silently did nothing for every release it
+# shipped in. Keep this in sync with s6-rc.d/shodh/run.
+SHODH_PATTERN='/usr/local/bin/shodh'
+
 while true; do
     sleep 14400  # 4 hours
 
-    SHODH_PID=$(pgrep -f shodh-memory || true)
+    SHODH_PID=$(pgrep -f "$SHODH_PATTERN" | head -1)
     if [ -z "$SHODH_PID" ]; then
+        echo "[watchdog] No process matching '${SHODH_PATTERN}' — cannot check Shodh RSS"
         continue
     fi
 

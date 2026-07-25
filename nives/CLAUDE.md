@@ -128,10 +128,22 @@ Shodh is a Rust-based semantic memory server. It stores facts about the user (pr
 
 ### Known Issue: Memory Leak
 
-Shodh has a memory leak (github.com/varun29ankuS/shodh-memory/issues/90) — grows to 2GB+ over 24 hours. Mitigated by:
-1. Docker memory limit: 768MB in `config.yaml`
-2. Watchdog service: checks RSS every 4h, SIGTERMs if >512MB
-3. s6 auto-restarts the process
+Shodh has a memory leak (github.com/varun29ankuS/shodh-memory/issues/90) — grows to 2GB+ over 24 hours. Mitigations:
+
+1. **Watchdog service** — checks RSS every 4h, SIGTERMs if >512MB; s6 auto-restarts.
+   Before 2.3.3 it matched on `pgrep -f shodh-memory`, but the binary is launched as
+   `/usr/local/bin/shodh server …` — that pattern matched nothing, so the watchdog
+   silently did nothing in every release it shipped in (confirmed live: zero
+   `[watchdog]` lines across a week of add-on logs). Fixed in 2.3.3, which also
+   logs when no matching process is found. Keep the pattern in sync with
+   `s6-rc.d/shodh/run`.
+2. **`memory: 768` in `config.yaml` — does NOT work.** This is not a key the HA
+   Supervisor recognises, so it is silently ignored; a live add-on reports
+   `memory_limit` equal to the host's total RAM. HA add-on config has no
+   documented container memory-limit option. Do not count this as a guard.
+
+Practically that means the only working mitigation today is the watchdog. If the
+leak resurfaces, the container will grow until the host OOM-kills it.
 
 ### Binary Distribution
 

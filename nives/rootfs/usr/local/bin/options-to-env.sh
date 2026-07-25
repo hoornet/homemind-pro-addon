@@ -78,11 +78,33 @@ else
             ;;
     esac
 
-    # Default model for OpenRouter if not specified
-    if [ "$LLM_PROVIDER" = "openrouter" ] && [ -z "$LLM_MODEL" ]; then
-        write_env "LLM_MODEL" "anthropic/claude-haiku-4.5"
-    elif [ -n "$LLM_MODEL" ]; then
+    # Model, with a per-provider default when the user leaves it blank.
+    # Only OpenRouter used to get a default; every other provider fell through to
+    # the server's own built-in default, which is an Anthropic model id. Pointing
+    # that at OpenAI or Ollama gets a "model not found" error that reads like the
+    # add-on is broken rather than like a missing setting.
+    if [ -n "$LLM_MODEL" ]; then
         write_env "LLM_MODEL" "$LLM_MODEL"
+    else
+        case "$LLM_PROVIDER" in
+            openrouter)
+                write_env "LLM_MODEL" "anthropic/claude-haiku-4.5"
+                echo "[init] No model set — defaulting to anthropic/claude-haiku-4.5"
+                ;;
+            openai)
+                write_env "LLM_MODEL" "gpt-5-mini"
+                echo "[init] No model set — defaulting to gpt-5-mini"
+                ;;
+            ollama)
+                echo "[init] WARNING: Ollama has no default model. Set 'Model' in the add-on"
+                echo "[init]          configuration to the name you pulled (e.g. qwen3:8b),"
+                echo "[init]          otherwise chat will fail with a model-not-found error."
+                ;;
+            anthropic)
+                # The server's built-in default is already an Anthropic model.
+                :
+                ;;
+        esac
     fi
 fi
 
