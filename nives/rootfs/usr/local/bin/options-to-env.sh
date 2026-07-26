@@ -23,6 +23,22 @@ fi
 
 SHODH_KEY=$(cat /data/.shodh_key)
 
+# Generate the add-on's own API token on first run.
+#
+# Without this the server's auth middleware stays dormant and port 3100 is wide
+# open to anything that can reach the container: /api/chat can drive Home
+# Assistant, and DELETE /api/memory/:userId wipes everything the user has taught
+# it. The token is persisted in /data so it survives restarts and updates — the
+# companion integration receives it via the Supervisor discovery message, so
+# there is nothing for the user to copy or configure.
+if [ ! -f /data/.api_token ]; then
+    openssl rand -hex 32 > /data/.api_token
+    echo "[init] Generated a new API token for the Nives server"
+fi
+chmod 600 /data/.api_token /data/.shodh_key 2>/dev/null || true
+
+API_TOKEN=$(cat /data/.api_token)
+
 # Read options (nested cloud/byok structure)
 LLM_MODE=$(jq -r '.llm_mode // "cloud"' "$OPTIONS")
 PROXY_KEY=$(jq -r '.cloud.api_key // ""' "$OPTIONS")
@@ -127,6 +143,11 @@ write_env "HA_TOKEN" "$SUPERVISOR_TOKEN"
 # --- Shodh Memory (internal, always localhost) ---
 write_env "SHODH_URL" "http://127.0.0.1:3030"
 write_env "SHODH_API_KEY" "$SHODH_KEY"
+
+# --- API auth ---
+# Setting this makes the server require "Authorization: Bearer <token>" on every
+# endpoint except /api/health. The integration gets the token from discovery.
+write_env "API_TOKEN" "$API_TOKEN"
 
 # --- Server configuration (always the same in add-on mode) ---
 write_env "PORT" "3100"

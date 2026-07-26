@@ -98,6 +98,22 @@ After the add-on starts, go to **Settings > Voice assistants** and select **Nive
 
 If the integration doesn't appear, restart Home Assistant Core once — the add-on installs it on startup.
 
+### API access (advanced)
+
+The add-on's HTTP API requires an access token. The token is generated on first
+start, stored at `/data/.api_token`, and handed to the companion integration
+automatically — **there is nothing to configure.**
+
+It only matters if you call the API yourself (a script, or the add-on's port
+mapped to your network). In that case, read the token using the SSH or Terminal
+add-on and send it as a bearer token:
+
+```
+curl -H "Authorization: Bearer <token>" http://<addon-host>:3100/api/chat ...
+```
+
+`/api/health` stays public so monitoring doesn't need the token.
+
 ---
 
 ## Common Options

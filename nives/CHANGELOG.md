@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.0
+
+- **The Nives API is now protected by an access token.** Until now the add-on's API on port 3100 accepted any request that could reach it — which meant anything else on your Home Assistant machine could talk to your assistant, control your devices through it, or erase what it remembers. It now requires an access token, generated on first start and kept on your own machine.
+- **Nothing to set up.** The add-on hands the token to its companion integration automatically, including on existing installs — Assist keeps working, and there's nothing to copy or configure. Home Assistant restarts once during the update so it picks up the change.
+- If you call the API yourself (a script, or the add-on's port exposed to your network), you'll now need to send the token — see "API access (advanced)" in the documentation for where to find it. `/api/health` stays open so monitoring keeps working.
+
 ## 2.3.4
 
 - **Clearer answer to "what actually gets sent to the AI?"** The Data & Privacy section now spells out exactly what stays on your machine (your memories and conversations, always) and what travels with each message so Nives can answer usefully (the relevant memories, your home layout, and anything it looks up). The previous wording said only your conversation text was sent, which undersold it — the same is true in Cloud and BYOK mode, and running a local model via Ollama keeps everything in the house.

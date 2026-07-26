@@ -105,12 +105,23 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         config = discovery_info.config
         host = config.get("host", "")
         port = config.get("port", 3100)
+        api_token = (config.get("api_token") or "").strip()
         api_url = f"http://{host}:{port}"
 
-        self._hassio_discovery = {"host": host, "port": port}
+        self._hassio_discovery = {"host": host, "port": port, "api_token": api_token}
 
         await self.async_set_unique_id(f"nives_addon_{host}")
-        self._abort_if_unique_id_configured(updates={CONF_API_URL: api_url})
+
+        # Push the token into an already-configured entry. The add-on re-announces
+        # itself on every start, so an existing install picks up the token on the
+        # next restart with nothing for the user to do — this is what lets the
+        # server start requiring auth without stranding anyone. Only include the
+        # token when we actually have one, so a discovery message without it can
+        # never blank out a working entry.
+        updates: dict[str, Any] = {CONF_API_URL: api_url}
+        if api_token:
+            updates[CONF_API_TOKEN] = api_token
+        self._abort_if_unique_id_configured(updates=updates)
 
         return await self.async_step_hassio_confirm()
 
@@ -122,13 +133,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             assert self._hassio_discovery is not None
             host = self._hassio_discovery["host"]
             port = self._hassio_discovery["port"]
-            return self.async_create_entry(
-                title="Nives",
-                data={
-                    CONF_API_URL: f"http://{host}:{port}",
-                    CONF_USER_ID: DEFAULT_USER_ID,
-                },
-            )
+            api_token = self._hassio_discovery.get("api_token", "")
+            data: dict[str, Any] = {
+                CONF_API_URL: f"http://{host}:{port}",
+                CONF_USER_ID: DEFAULT_USER_ID,
+            }
+            if api_token:
+                data[CONF_API_TOKEN] = api_token
+            return self.async_create_entry(title="Nives", data=data)
 
         return self.async_show_form(step_id="hassio_confirm")
 
