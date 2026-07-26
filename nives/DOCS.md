@@ -68,7 +68,7 @@ Use your own API key from any supported provider. Your data goes directly to the
    - Set **LLM Mode** to `byok`
    - Set **Provider** to your chosen provider
    - Paste your **API Key**
-   - Optionally set a **Model** (leave empty for provider default)
+   - Set a **Model** — optional for Anthropic, OpenAI and OpenRouter (each has a sensible default); **required for Ollama**, where you must enter the model you pulled (e.g. `qwen3:8b`)
 3. Save and start the add-on
 
 ### BYOK Configuration
@@ -78,8 +78,8 @@ Use your own API key from any supported provider. Your data goes directly to the
 | LLM Mode | Set to `byok` |
 | Provider | `anthropic`, `openai`, `openrouter`, or `ollama` |
 | API Key | Your provider API key |
-| Model | Model ID (leave empty for provider default) |
-| API Base URL | Custom endpoint — required for Ollama, leave empty for cloud providers |
+| Model | Model ID. Optional for Anthropic / OpenAI / OpenRouter; **required for Ollama** |
+| API Base URL | Custom endpoint. Leave empty for cloud providers; for Ollama, defaults to `http://homeassistant:11434/v1` if you leave it blank |
 
 ### Supported Providers
 
@@ -111,11 +111,23 @@ If the integration doesn't appear, restart Home Assistant Core once — the add-
 
 ## Data & Privacy
 
-All data stays on your device:
-- Conversations stored in `/data/conversations.db`
-- Memories stored in `/data/shodh/`
-- No telemetry, no cloud dependency (in BYOK mode)
-- In Cloud mode, only your conversation text is sent to the AI — your HA data never leaves your network
+**Stored on your device, always:**
+- Conversations in `/data/conversations.db`
+- Memories in `/data/shodh/`
+- No telemetry
+
+Nothing is stored anywhere else — there is no copy of your memories or your home on our side.
+
+**What is sent to the AI model, on every message:**
+
+To answer usefully, Nives has to tell the model about your home. Each request includes:
+- your message and recent conversation
+- the memories relevant to what you asked
+- your home layout — floors, rooms, and the device IDs in them
+- the capabilities of your lights
+- the results of anything it looks up to answer you (device states, history)
+
+This is true in **both** Cloud and BYOK mode — the difference is only *which* provider receives it. In Cloud mode that's the model provider we route to; in BYOK mode it's whichever provider's key you entered, and we're not in the path at all. If you'd rather none of it left your network, run a local model via Ollama in BYOK mode (see the note above about local setups).
 
 ## Troubleshooting
 

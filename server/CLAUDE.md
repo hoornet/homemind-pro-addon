@@ -46,7 +46,8 @@ Provider is selected at startup by `llm/factory.ts` based on `LLM_PROVIDER` conf
 ### Memory Architecture
 
 - **Long-term facts**: Shodh Memory (external service, semantic search, Hebbian learning, natural decay)
-- **Conversation history**: `IConversationStore` with two backends: `InMemoryConversationStore` (default, lost on restart) and `SqliteConversationStore` (persistent via `better-sqlite3`). Controlled by `CONVERSATION_STORAGE` env var (`memory` | `sqlite`). Max 20 messages/conversation.
+- **Conversation history**: `IConversationStore` with two backends: `InMemoryConversationStore` (default, lost on restart) and `SqliteConversationStore` (persistent via `better-sqlite3`). Controlled by `CONVERSATION_STORAGE` env var (`memory` | `sqlite`). Max 20 messages/conversation. **The add-on always sets `sqlite`.**
+- **Known users** live in their own `users` table (sqlite) / `knownUsers` set (memory) — deliberately *not* derived from conversation rows, which `cleanupOldConversations()` prunes after 24h. Deriving them from messages is what silently disabled `MemoryCleanupJob` in every release before 2.3.3 (live logs showed "[cleanup] No known users" on every run for a week while Shodh held 67 facts).
 - **Entity cache**: 10-second TTL in HomeAssistantClient (invalidated after service calls)
 - **Fact categories**: baseline, preference, identity, device, pattern, correction
 - **Smart replacement**: Extractor identifies existing facts that new facts supersede (via `replaces` field)
@@ -88,7 +89,9 @@ import { loadConfig } from "./config.js";
 
 **Zod validation** for all config and request schemas. Config loads from env vars via `loadConfig()` in `config.ts` — exits process on validation failure. Uses `emptyToUndefined()` helper because Docker Compose sets empty strings (not `undefined`) for unset env vars.
 
-**HA tool definitions** are provider-neutral `ToolDefinition[]` in `llm/tool-definitions.ts`, converted to provider format via `toAnthropicTools()` / `toOpenAITools()`. Ten tools: `get_state`, `get_entities`, `search_entities`, `call_service`, `get_history`, `create_automation`, `list_automations`, `delete_automation`, `update_automation`, `list_services`. Shared execution logic in `llm/tool-handler.ts`. The automation create/update/delete tools run through a server-enforced confirmation gate (`llm/automation-confirmations.ts`) — first call previews, a later-turn re-call commits. `/api/chat` also accepts an optional `images` array (data URLs) → forwarded as multimodal content to vision-capable models (used by the integration's `ai_task` entity for camera-snapshot analysis).
+**HA tool definitions** are provider-neutral `ToolDefinition[]` in `llm/tool-definitions.ts`, converted to provider format via `toAnthropicTools()` / `toOpenAITools()`. Ten tools: `get_state`, `get_entities`, `search_entities`, `call_service`, `get_history`, `create_automation`, `list_automations`, `delete_automation`, `update_automation`, `list_services`. Shared execution logic in `llm/tool-handler.ts`. The automation create/update/delete tools run through a server-enforced confirmation gate (`llm/automation-confirmations.ts`) — first call previews, a later-turn re-call commits, **scoped by a stable identity** (entity_id for update/delete, normalized alias for create). The payload is never compared: the model reformats it wildly between turns, which is what made the v2.1.10 fingerprint approach loop forever. Create had no identity key at all until 2.3.3, so any create in a later turn confirmed any earlier create preview.
+
+**Tool loop is capped** at `MAX_TOOL_ITERATIONS` (8) in both engines. On the final iteration the request is re-issued with tool calling disabled (`tool_choice: "none"` / `{type: "none"}`) so a stuck model produces a written answer rather than running to the integration's 120s timeout, burning the user's allowance. Tool arguments are parsed defensively — malformed JSON becomes a retryable tool error, never an exception that fails the whole request (cheap models emit these). `/api/chat` also accepts an optional `images` array (data URLs) → forwarded as multimodal content to vision-capable models (used by the integration's `ai_task` entity for camera-snapshot analysis).
 
 **Prompt caching**: System prompt split into static (cached) + dynamic (facts/datetime) blocks in `llm/prompts.ts`. Two variants: regular and voice (shorter). Custom prompt replaces the default identity line (opening sentence) rather than appending — this gives it maximum authority over persona. Dynamic block includes both human-readable datetime with UTC offset (e.g., `10:15 PM CET (UTC+1)`) and a raw ISO timestamp for unambiguous tool use.
 
@@ -139,11 +142,15 @@ LLM config:
 - `OPENAI_BASE_URL` — optional, for OpenAI-compatible APIs (Azure, local proxies)
 - `OLLAMA_BASE_URL` — optional, Ollama API endpoint (default: `http://localhost:11434/v1`)
 
-Optional: `PORT` (default 3100), `API_TOKEN` (bearer token for auth — when set, all endpoints except health require it), `HA_SKIP_TLS_VERIFY`, `MEMORY_TOKEN_LIMIT` (default 1500), `LOG_LEVEL`, `CONVERSATION_STORAGE` (`memory` | `sqlite`, default `memory`), `CONVERSATION_DB_PATH` (default `/data/conversations.db`, only used when `CONVERSATION_STORAGE=sqlite`), `CUSTOM_PROMPT` (server-level default custom system prompt), `TZ` (timezone for the Docker container, default `Europe/Prague` in docker-compose; Node.js uses this for `toLocaleString()` so the LLM sees correct local time)
+Optional: `PORT` (default 3100), `API_TOKEN` (bearer token for auth — when set, all endpoints except health require it), `HA_SKIP_TLS_VERIFY`, `MEMORY_TOKEN_LIMIT` (default 3000), `LOG_LEVEL`, `CONVERSATION_STORAGE` (`memory` | `sqlite`, default `memory`), `CONVERSATION_DB_PATH` (default `/data/conversations.db`, only used when `CONVERSATION_STORAGE=sqlite`), `CUSTOM_PROMPT` (server-level default custom system prompt), `TZ` (timezone for the Docker container, default `Europe/Prague` in docker-compose; Node.js uses this for `toLocaleString()` so the LLM sees correct local time)
 
-### Cloud Proxy Compatibility
+### Nives Cloud Mode
 
-The server is fully compatible with the Home Mind Cloud metering proxy. When deployed in cloud mode, the provisioner sets `LLM_PROVIDER=openai` + `OPENAI_BASE_URL=<proxy>/v1` + `OPENAI_API_KEY=<proxy_key>`. The server doesn't know it's talking to a proxy — it just sees an OpenAI-compatible API. This is by design: zero coupling between the OSS server and the closed-source proxy.
+There is **no proxy**. In cloud mode `options-to-env.sh` sets `LLM_PROVIDER=openai` + `OPENAI_BASE_URL=https://openrouter.ai/api/v1` + `OPENAI_API_KEY=<the user's provisioned OpenRouter key>`, and the add-on talks to OpenRouter directly.
+
+The model is not hardcoded: at boot the add-on asks `GET https://nives.house/api/addon/config` (bearer = the user's key) which returns `@preset/nives-<tier>`, so the model lineup is managed server-side with no add-on release. Bounded and failure-safe — an 8s timeout, falling back to `@preset/nives-standard` if the cloud is briefly unreachable. Chat itself never goes through nives.house.
+
+> Historical note: this section used to describe a "Home Mind Cloud metering proxy" (`OPENAI_BASE_URL=<proxy>/v1`). That proxy was retired and its repo is archived under `Legacy/`. Nothing in the request path goes through us any more.
 
 STT (optional): `STT_PROVIDER` (`openai` | `none`, default `none`), `STT_API_KEY` (overrides `OPENAI_API_KEY`), `STT_BASE_URL` (custom Whisper-compatible endpoint), `STT_MODEL` (default `whisper-1`)
 
@@ -177,11 +184,11 @@ Optional bearer token auth via `API_TOKEN` env var. When set, all endpoints exce
 
 ## Deployment
 
-Docker Compose (root `docker-compose.yml`) runs two services: `shodh` (memory backend, port 3030) and `server` (API, port 3100). Server depends on Shodh healthcheck.
+**How this actually ships:** as part of the Nives add-on, not standalone. The add-on's `nives/Dockerfile` builds this source in a Node stage, and s6-overlay runs it alongside Shodh in one container. Shodh comes from a **GitHub release binary** (both `linux-x64` and `linux-arm64` — the official Docker image is amd64-only), not from Docker Hub. See `nives/CLAUDE.md` for the s6 service layout and the config bridge.
 
-**Shodh Docker**: Thin wrapper around the official `varunshodh/shodh-memory:latest` image. The wrapper (`docker/shodh/Dockerfile`) adds a custom entrypoint for volume permission migration. No more manual binary/library copying needed. `deploy.sh` auto-generates `SHODH_API_KEY` via `openssl rand -hex 32` if not set.
+**The HA integration is not installed via HACS.** It ships inside this repo at `nives/rootfs/opt/nives/` and the `install-integration` s6 oneshot copies it into `/config/custom_components/nives/` on startup, version-gated against `manifest.json`. Users never touch HACS. (The old `home-mind-hacs` repo belongs to the OSS sister project and is archived under `Legacy/` — don't reference it here.)
 
-HA custom component installed via HACS from `https://github.com/hoornet/home-mind-hacs` or manually copied to `/config/custom_components/home_mind/`.
+**Standalone dev only:** the `docker-compose.yml` in this directory runs `shodh` (port 3030) and `server` (port 3100) as two services for working on the server outside HA. That path uses the `varunshodh/shodh-memory:latest` image via a thin wrapper (`docker/shodh/Dockerfile`) that fixes volume permissions, and `deploy.sh` auto-generates `SHODH_API_KEY`. It is not how the add-on runs.
 
 ## Known Limitations
 

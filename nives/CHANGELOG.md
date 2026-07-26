@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.4
+
+- **Clearer answer to "what actually gets sent to the AI?"** The Data & Privacy section now spells out exactly what stays on your machine (your memories and conversations, always) and what travels with each message so Nives can answer usefully (the relevant memories, your home layout, and anything it looks up). The previous wording said only your conversation text was sent, which undersold it — the same is true in Cloud and BYOK mode, and running a local model via Ollama keeps everything in the house.
+- **Setup docs match how the add-on behaves.** Model is optional for Anthropic, OpenAI and OpenRouter but required for Ollama, and the Ollama base URL has a default — the configuration table now says so.
+
 ## 2.3.3
 
 - **Confirmations are now tied to the specific automation.** If you ask for one automation, then change your mind and ask for a different one instead, Nives asks about the new one before creating it rather than treating your earlier request as already answered.

@@ -16,7 +16,7 @@
 - **Knows your home** — reads your floors, areas, and device capabilities, so it always knows which room a light is in and how to control it.
 - **Creates & manages automations** — just ask ("turn the porch light on at sunset", "make the evening scene 30 minutes earlier") and Nives builds, edits, lists, or removes Home Assistant automations for you — always confirming before it changes anything, and using what it remembers about your home (your "evening", your preferred brightness).
 - **Works inside your automations** — Nives is also a Home Assistant **AI Task** provider: call `ai_task.generate_data` from any automation to get an answer or structured data, reasoned with your home's context. It can even look at a **camera snapshot** and tell you what matters (with a vision-capable model) — great for smarter, low-false-alarm camera and doorbell alerts.
-- **Private by default** — your memories live on your Home Assistant machine and never leave your network.
+- **Your memories are stored on your machine** — the memory database lives on your Home Assistant box, not ours, and there's no telemetry. (To answer you, Nives does send the *relevant* memories plus your home layout to the model with each request — the add-on docs spell out exactly what goes where. Want none of it to leave the house? Run a local model via Ollama.)
 - **Two ways to power it** — managed **Nives Cloud** (recommended) or **bring your own key**. Both run the exact same on-device server and memory; only the AI endpoint differs.
 
 ## Choosing how to power Nives
@@ -63,7 +63,7 @@ Then point Home Assistant at it: **Settings → Voice assistants → (your assis
 Nives bundles two services into one add-on:
 
 - **Nives server** — the conversation engine. Connects to Home Assistant automatically (no URL or token to configure) and controls your devices through HA's own tools.
-- **Shodh memory** — an on-device cognitive memory with semantic search, so Nives surfaces the right context at the right moment. Your memories stay on your HA machine.
+- **Shodh memory** — an on-device cognitive memory with semantic search, so Nives surfaces the right context at the right moment. The memory store itself never leaves your HA machine. ([Shodh Memory](https://github.com/varun29ankuS/shodh-memory) is an independent open-source project — Nives integrates it, and the same engine powers home-mind.)
 
 ## Related projects
 
