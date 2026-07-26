@@ -144,10 +144,27 @@ write_env "HA_TOKEN" "$SUPERVISOR_TOKEN"
 write_env "SHODH_URL" "http://127.0.0.1:3030"
 write_env "SHODH_API_KEY" "$SHODH_KEY"
 
-# --- API auth ---
-# Setting this makes the server require "Authorization: Bearer <token>" on every
-# endpoint except /api/health. The integration gets the token from discovery.
-write_env "API_TOKEN" "$API_TOKEN"
+# --- API auth (DISABLED in 2.4.1 — see below) ---
+#
+# 2.4.0 set API_TOKEN here and delivered the token to the integration through the
+# Supervisor discovery message. That does not work for installs that already
+# exist, and it broke Assist for them:
+#
+#   Supervisor DEDUPLICATES discovery messages. Re-POSTing /discovery for the
+#   same service returns the SAME uuid and does not raise a new discovery event,
+#   so Home Assistant never re-runs the config flow and
+#   _abort_if_unique_id_configured(updates=...) never gets the chance to write
+#   the token into the existing config entry. Verified on a real install: the
+#   entry kept only {api_url, user_id} across an add-on restart AND a full HA
+#   Core restart, while the server was already returning 401.
+#
+# A fresh install is fine (the flow runs once, with the token). Every existing
+# install is not. Until the token is delivered by a mechanism that doesn't depend
+# on discovery, leave the middleware dormant — the server treats an unset
+# API_TOKEN as "no auth", which is the pre-2.4.0 behaviour.
+#
+# The token is still generated and kept in /data/.api_token so the eventual fix
+# has a stable value to hand over.
 
 # --- Server configuration (always the same in add-on mode) ---
 write_env "PORT" "3100"
