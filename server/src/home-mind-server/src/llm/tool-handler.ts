@@ -42,7 +42,7 @@ function gateAutomationChange(
       confirmation_required: true,
       preview: describePending(toolName, input),
       message:
-        "This is a PREVIEW — nothing has changed yet (this is expected, not an error, so do NOT retry or reformat). Tell the user exactly what it will do and ask them to confirm, then STOP and wait — do not call this tool again in this turn. After they reply yes in their NEXT message, call this same tool once more to apply it. Never claim it's done until a call returns \"success\": true.",
+        "This is a PREVIEW — nothing has changed yet (this is expected, not an error, so do NOT retry or reformat). Describe it to the user using ONLY what is in \"preview\": NEVER mention a trigger, condition or action that is not literally present there. ALWAYS tell them, in the same breath, which parts of what they asked for are missing from it — read \"preview.notes\" and repeat what it says. If they asked for something this payload does not cover, say so and offer to include it, rather than describing the automation as if it were covered. Then ask them to confirm and STOP and wait — do not call this tool again in this turn. After they reply yes in their NEXT message, call this same tool once more to apply it. Never claim it's done until a call returns \"success\": true.",
     },
   };
 }

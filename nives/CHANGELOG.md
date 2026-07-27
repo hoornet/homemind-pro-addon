@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.4.5
+
+- **Automations now account for everything you asked for.** If you describe several things at once — "when I'm home", "between 20:00 and 22:00", "and switch it off again when it cools down" — Nives now either builds every part in, or tells you plainly which part it hasn't, before you confirm. It will no longer describe a condition that isn't actually in the automation.
+- **"Turn it on when it gets hot, off when it cools down" now gets both halves.** That needs two automations, and Nives now says so up front and creates both, rather than offering to do the second one later.
+- **A daily time check is now described for what it is.** An automation triggered at a set time looks at the temperature once, at that moment — it won't notice the room heating up half an hour later. Nives now points this out and offers to make it react to the temperature itself.
+- Under the hood: the confirmation preview now spells out what an automation will *not* do — no conditions means it runs every time, regardless of who's home or what time it is.
+
 ## 2.4.4
 
 - **Updates now finish without you having to restart Home Assistant.** When Nives updates, Home Assistant needs a quick restart to load the new companion integration. Nives was asking for that restart in a way it isn't permitted to use, so the request was always turned down and the update sat half-applied until you restarted Home Assistant yourself. It now asks the way it is allowed to, and 2.4.3's retries stay in place for the occasional moment when Home Assistant is briefly unavailable.

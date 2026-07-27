@@ -121,6 +121,60 @@ export function clearConfirmation(conversationId: string): void {
   pending.delete(conversationId);
 }
 
+function asArray(value: unknown): unknown[] {
+  if (value === undefined || value === null) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+/** The kind of each trigger/condition, tolerating both `platform:` and `trigger:`/`condition:` keys. */
+function kindsOf(value: unknown, ...keys: string[]): string[] {
+  return asArray(value).map((entry) => {
+    const obj = (entry ?? {}) as Record<string, unknown>;
+    for (const key of keys) {
+      if (obj[key] !== undefined) return String(obj[key]).toLowerCase();
+    }
+    return "";
+  });
+}
+
+/**
+ * Structural warnings about what the payload will and won't do.
+ *
+ * These exist because the preview alone was not enough. A real session: the user
+ * asked for cooling "when I'm at home", between 20:00 and 22:00, that switches
+ * off again at 20°C. What got created was a bare 20:00 time trigger with one
+ * numeric_state condition — no presence, no time window, no switch-off — and the
+ * model told the user it had included a 20:00–22:00 check. The payload shown in
+ * the preview was correct and complete; an absent `condition` key simply reads
+ * as nothing worth mentioning, so it went unmentioned.
+ *
+ * So state the absences as facts the model has to account for, rather than
+ * leaving them as missing keys.
+ */
+export function previewNotes(input: Record<string, unknown>): string[] {
+  const notes: string[] = [];
+
+  if (asArray(input.condition).length === 0) {
+    notes.push(
+      "This automation has NO conditions. It will run every single time the trigger fires — regardless of who is home, the time of day, or any other state. If the user asked for any such restriction, it is NOT in this automation and you must say so."
+    );
+  }
+
+  const triggerKinds = kindsOf(input.trigger, "platform", "trigger");
+  const conditionKinds = kindsOf(input.condition, "condition");
+  if (
+    triggerKinds.length > 0 &&
+    triggerKinds.every((kind) => kind === "time") &&
+    conditionKinds.includes("numeric_state")
+  ) {
+    notes.push(
+      "The only trigger is a fixed time, so the numeric value is checked once, at that instant, and never again. If it crosses the threshold later it will NOT run. If the user wants it to react whenever the value changes, a numeric_state trigger has to be added as well — say this plainly rather than implying a window is covered."
+    );
+  }
+
+  return notes;
+}
+
 /** Build a compact, human-readable preview of a pending automation change. */
 export function describePending(
   toolName: string,
@@ -132,9 +186,11 @@ export function describePending(
         action: "create automation",
         alias: input.alias,
         trigger: input.trigger,
-        condition: input.condition,
+        // Explicit, not absent: a missing key is easy to narrate straight past.
+        condition: input.condition ?? "(none — runs unconditionally)",
         do: input.action,
         mode: input.mode,
+        notes: previewNotes(input),
       };
     case "update_automation": {
       const changes: Record<string, unknown> = {};

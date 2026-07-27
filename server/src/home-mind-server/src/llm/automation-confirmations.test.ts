@@ -4,6 +4,7 @@ import {
   isConfirmed,
   clearConfirmation,
   describePending,
+  previewNotes,
 } from "./automation-confirmations.js";
 
 describe("automation confirmations", () => {
@@ -90,5 +91,82 @@ describe("automation confirmations", () => {
       action: "delete automation",
       entity_id: "automation.x",
     });
+  });
+});
+
+describe("preview notes — surfacing what the payload does NOT do", () => {
+  // Reproduces the real session that motivated this: the user asked for cooling
+  // "when I'm at home", between 20:00 and 22:00, switching off again at 20C.
+  // What got built was a bare 20:00 trigger with one numeric_state condition,
+  // and the model described a 20:00-22:00 check that was never written.
+  const bedroomAsBuilt = {
+    alias: "Bedroom cooling at 20:00 if over 22C",
+    trigger: { platform: "time", at: "20:00:00" },
+    condition: { condition: "numeric_state", entity_id: "sensor.temperatura_2", above: 22 },
+    action: { service: "climate.set_temperature" },
+  };
+
+  it("warns that a time-only trigger checks the value once and never again", () => {
+    const notes = previewNotes(bedroomAsBuilt);
+    expect(notes.some((n) => /checked once/i.test(n))).toBe(true);
+    expect(notes.some((n) => /numeric_state trigger has to be added/i.test(n))).toBe(true);
+  });
+
+  it("warns loudly when there are no conditions at all", () => {
+    const notes = previewNotes({ ...bedroomAsBuilt, condition: undefined });
+    expect(notes.some((n) => /NO conditions/.test(n))).toBe(true);
+    expect(notes.some((n) => /who is home/i.test(n))).toBe(true);
+  });
+
+  it("stays quiet when the automation genuinely covers the window", () => {
+    const notes = previewNotes({
+      alias: "Bedroom cooling 20:00-22:00",
+      trigger: [
+        { trigger: "time", at: "20:00:00" },
+        { trigger: "numeric_state", entity_id: "sensor.temperatura_2", above: 22 },
+      ],
+      condition: [
+        { condition: "time", after: "20:00:00", before: "22:00:00" },
+        { condition: "state", entity_id: "person.jure", state: "home" },
+        { condition: "numeric_state", entity_id: "sensor.temperatura_2", above: 22 },
+      ],
+      action: { service: "climate.set_temperature" },
+    });
+    expect(notes).toEqual([]);
+  });
+
+  it("reads both the legacy platform: key and the current trigger: key", () => {
+    const legacy = previewNotes(bedroomAsBuilt);
+    const current = previewNotes({
+      ...bedroomAsBuilt,
+      trigger: { trigger: "time", at: "20:00:00" },
+    });
+    expect(current).toEqual(legacy);
+  });
+
+  it("does not warn about a time trigger when no numeric check is involved", () => {
+    expect(
+      previewNotes({
+        alias: "Porch light",
+        trigger: { platform: "time", at: "20:00:00" },
+        condition: { condition: "state", entity_id: "person.jure", state: "home" },
+        action: { service: "light.turn_on" },
+      })
+    ).toEqual([]);
+  });
+
+  it("makes an absent condition explicit in the preview rather than omitting the key", () => {
+    const preview = describePending("create_automation", {
+      alias: "X",
+      trigger: { platform: "time", at: "12:00:00" },
+      action: { service: "light.turn_on" },
+    });
+    expect(preview.condition).toBe("(none — runs unconditionally)");
+    expect((preview.notes as string[]).length).toBeGreaterThan(0);
+  });
+
+  it("carries the notes through describePending for the real failing payload", () => {
+    const preview = describePending("create_automation", bedroomAsBuilt);
+    expect((preview.notes as string[]).some((n) => /checked once/i.test(n))).toBe(true);
   });
 });
