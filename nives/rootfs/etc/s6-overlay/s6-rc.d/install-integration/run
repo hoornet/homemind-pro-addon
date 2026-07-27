@@ -49,26 +49,15 @@ if [ "$NEEDS_UPDATE" = "true" ]; then
     # the add-on notices (no token receipt) and simply leaves auth switched off,
     # so nothing breaks — but the update is incomplete until HA reloads.
     #
-    # --max-time matters: nives-server waits on this oneshot, so a hung request
-    # here would stop the server ever starting.
-    if [ -n "$SUPERVISOR_TOKEN" ]; then
-        echo "[integration] Restarting HA Core to load updated integration..."
-        CODE=$(curl -s -o /tmp/integration-restart-resp -w '%{http_code}' --max-time 30 -X POST \
-            -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
-            http://supervisor/core/restart 2>/dev/null)
-        case "$CODE" in
-            2*)
-                rm -f /data/.ha_restart_needed
-                echo "[integration] HA Core restart triggered"
-                ;;
-            *)
-                echo "[integration] HA Core restart request failed (HTTP ${CODE:-none}): $(head -c 200 /tmp/integration-restart-resp 2>/dev/null)"
-                echo "[integration] Will retry once the add-on has finished starting."
-                ;;
-        esac
-        rm -f /tmp/integration-restart-resp
+    # The request itself is bounded: nives-server waits on this oneshot, so a
+    # hung request here would stop the server ever starting.
+    echo "[integration] Restarting HA Core to load updated integration..."
+    if OUT=$(/usr/local/bin/restart-ha-core.sh 2>&1); then
+        rm -f /data/.ha_restart_needed
+        echo "$OUT" | sed 's/^/[integration] /'
     else
-        echo "[integration] No SUPERVISOR_TOKEN — skipping HA Core restart"
+        echo "$OUT" | sed 's/^/[integration] /'
+        echo "[integration] Will retry once the add-on has finished starting."
     fi
 else
     echo "[integration] Nives integration is up to date"

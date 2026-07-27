@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.4
+
+- **Updates now finish without you having to restart Home Assistant.** When Nives updates, Home Assistant needs a quick restart to load the new companion integration. Nives was asking for that restart in a way it isn't permitted to use, so the request was always turned down and the update sat half-applied until you restarted Home Assistant yourself. It now asks the way it is allowed to, and 2.4.3's retries stay in place for the occasional moment when Home Assistant is briefly unavailable.
+- Nives asks for nothing more than it already had — this is the same permission it uses to read your sensors and switch your lights, not a new one.
+- If a restart still can't be arranged, the add-on log says exactly why and what to do, and Nives keeps working in the meantime.
+
 ## 2.4.3
 
 - **Updates now finish on their own.** When Nives updates, Home Assistant needs a quick restart to load the new companion integration. The add-on asks for that restart itself — but if Home Assistant is still busy finishing the update at that moment, the request doesn't land, and the update stays half-applied until you restart Home Assistant yourself. Nives now waits until it has finished starting and asks again, a few times, so this sorts itself out.

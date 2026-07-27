@@ -124,7 +124,7 @@ COPY nives/rootfs /
 # Ensure all scripts are executable
 RUN find /etc/s6-overlay -name 'run' -exec chmod +x {} \; \
     && find /etc/s6-overlay -name 'finish' -exec chmod +x {} \; \
-    && chmod +x /usr/local/bin/options-to-env.sh
+    && chmod +x /usr/local/bin/*.sh
 
 # Persistent data volume (Shodh data, conversations, keys)
 VOLUME ["/data"]

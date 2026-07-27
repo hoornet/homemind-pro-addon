@@ -2,23 +2,27 @@
 # Retry the Home Assistant Core restart that updated integration files need in
 # order to actually be loaded.
 #
-# install-integration asks for that restart the moment it copies new files, but
-# that turns out to be the wrong moment: during a Supervisor-driven add-on
-# UPDATE the request fails. Observed on a real 2.4.1 → 2.4.2 upgrade — the
-# add-on logged "HA Core restart request FAILED", while the identical call made
-# by hand a few minutes later returned {"result":"ok"} instantly. Supervisor
-# appears to refuse a core restart while it is still holding the add-on-update
-# job, so a single attempt mid-update is close to guaranteed to miss.
+# install-integration asks for that restart the moment it copies new files. This
+# service runs at the end of the startup chain — after the server is up and
+# discovery has run — and tries again if that first attempt did not land.
 #
-# This service runs at the end of the startup chain — after the server is up and
-# discovery has run — where Supervisor has had time to finish, and retries a few
-# times. It is bounded: if the restart never lands, the add-on stays fully
+# Note on why this exists, because the first explanation was wrong: 2.4.3 added
+# these retries on the theory that Supervisor was merely busy finishing the
+# add-on update and would accept a later request. The retry logging it also
+# added then showed the truth — "403: Forbidden", every attempt. The old
+# endpoint (Supervisor's /core/restart) needs `hassio_role: manager`, which this
+# add-on does not request, so no amount of retrying could ever have worked.
+# 2.4.4 moved the request to the Home Assistant Core API proxy, which our
+# `homeassistant_api: true` permission does grant. The retries are kept because
+# they are still useful when Home Assistant is briefly unavailable — but they
+# are no longer the fix.
+#
+# Bounded either way: if the restart never lands, the add-on stays fully
 # functional and the log tells the user to restart Home Assistant themselves.
 
 FLAG="/data/.ha_restart_needed"
 ACK="/config/nives/.api_token.ack"
 MANIFEST="/config/custom_components/nives/manifest.json"
-RESP="/tmp/ha-restart-resp"
 
 [ -f "$FLAG" ] || exit 0
 
@@ -32,38 +36,21 @@ if [ -f "$ACK" ] && [ -f "$MANIFEST" ] && [ "$ACK" -nt "$MANIFEST" ]; then
     exit 0
 fi
 
-SUPERVISOR_TOKEN="${SUPERVISOR_TOKEN:-}"
-if [ -z "$SUPERVISOR_TOKEN" ] && [ -f /var/run/s6/container_environment/SUPERVISOR_TOKEN ]; then
-    SUPERVISOR_TOKEN=$(cat /var/run/s6/container_environment/SUPERVISOR_TOKEN)
-fi
-if [ -z "$SUPERVISOR_TOKEN" ]; then
-    echo "[ha-restart] No SUPERVISOR_TOKEN — cannot restart Home Assistant Core"
-    exit 0
-fi
-
 echo "[ha-restart] Home Assistant still needs a restart to load the updated Nives integration"
 
 for delay in 10 20 30 45; do
     sleep "$delay"
 
-    CODE=$(curl -s -o "$RESP" -w '%{http_code}' --max-time 30 -X POST \
-        -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
-        http://supervisor/core/restart 2>/dev/null)
-
-    case "$CODE" in
-        2*)
-            rm -f "$FLAG" "$RESP"
-            echo "[ha-restart] Home Assistant Core restart triggered"
-            exit 0
-            ;;
-        *)
-            # Log what Supervisor actually said. The single most useful thing
-            # the first version of this did NOT do was record the reason.
-            echo "[ha-restart] attempt failed (HTTP ${CODE:-none}): $(head -c 200 "$RESP" 2>/dev/null)"
-            ;;
-    esac
+    if OUT=$(/usr/local/bin/restart-ha-core.sh 2>&1); then
+        rm -f "$FLAG"
+        echo "$OUT" | sed 's/^/[ha-restart] /'
+        exit 0
+    fi
+    # Log what was actually said. The single most useful thing the original
+    # version did NOT do was record the reason — that omission cost us a whole
+    # release built on the wrong diagnosis.
+    echo "$OUT" | sed 's/^/[ha-restart] /'
 done
-rm -f "$RESP"
 
 # The flag stays set, so the next add-on start tries again.
 echo "[ha-restart] WARNING: could not restart Home Assistant Core automatically."
