@@ -1,0 +1,74 @@
+#!/command/with-contenv bash
+# Retry the Home Assistant Core restart that updated integration files need in
+# order to actually be loaded.
+#
+# install-integration asks for that restart the moment it copies new files, but
+# that turns out to be the wrong moment: during a Supervisor-driven add-on
+# UPDATE the request fails. Observed on a real 2.4.1 → 2.4.2 upgrade — the
+# add-on logged "HA Core restart request FAILED", while the identical call made
+# by hand a few minutes later returned {"result":"ok"} instantly. Supervisor
+# appears to refuse a core restart while it is still holding the add-on-update
+# job, so a single attempt mid-update is close to guaranteed to miss.
+#
+# This service runs at the end of the startup chain — after the server is up and
+# discovery has run — where Supervisor has had time to finish, and retries a few
+# times. It is bounded: if the restart never lands, the add-on stays fully
+# functional and the log tells the user to restart Home Assistant themselves.
+
+FLAG="/data/.ha_restart_needed"
+ACK="/config/nives/.api_token.ack"
+MANIFEST="/config/custom_components/nives/manifest.json"
+RESP="/tmp/ha-restart-resp"
+
+[ -f "$FLAG" ] || exit 0
+
+# The integration rewrites its token receipt every time it sets up, so a receipt
+# newer than the integration files on disk means Home Assistant has already
+# loaded them — the user restarted it themselves before we got here. Clear the
+# flag rather than restarting them a second time for no reason.
+if [ -f "$ACK" ] && [ -f "$MANIFEST" ] && [ "$ACK" -nt "$MANIFEST" ]; then
+    rm -f "$FLAG"
+    echo "[ha-restart] Home Assistant has already loaded the updated integration"
+    exit 0
+fi
+
+SUPERVISOR_TOKEN="${SUPERVISOR_TOKEN:-}"
+if [ -z "$SUPERVISOR_TOKEN" ] && [ -f /var/run/s6/container_environment/SUPERVISOR_TOKEN ]; then
+    SUPERVISOR_TOKEN=$(cat /var/run/s6/container_environment/SUPERVISOR_TOKEN)
+fi
+if [ -z "$SUPERVISOR_TOKEN" ]; then
+    echo "[ha-restart] No SUPERVISOR_TOKEN — cannot restart Home Assistant Core"
+    exit 0
+fi
+
+echo "[ha-restart] Home Assistant still needs a restart to load the updated Nives integration"
+
+for delay in 10 20 30 45; do
+    sleep "$delay"
+
+    CODE=$(curl -s -o "$RESP" -w '%{http_code}' --max-time 30 -X POST \
+        -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+        http://supervisor/core/restart 2>/dev/null)
+
+    case "$CODE" in
+        2*)
+            rm -f "$FLAG" "$RESP"
+            echo "[ha-restart] Home Assistant Core restart triggered"
+            exit 0
+            ;;
+        *)
+            # Log what Supervisor actually said. The single most useful thing
+            # the first version of this did NOT do was record the reason.
+            echo "[ha-restart] attempt failed (HTTP ${CODE:-none}): $(head -c 200 "$RESP" 2>/dev/null)"
+            ;;
+    esac
+done
+rm -f "$RESP"
+
+# The flag stays set, so the next add-on start tries again.
+echo "[ha-restart] WARNING: could not restart Home Assistant Core automatically."
+echo "[ha-restart]          The updated Nives integration is on disk but Home"
+echo "[ha-restart]          Assistant is still running the previous version."
+echo "[ha-restart]          Restart Home Assistant (Settings → System → Restart)."
+echo "[ha-restart]          Nives keeps working in the meantime."
+exit 0

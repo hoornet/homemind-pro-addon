@@ -37,33 +37,36 @@ if [ "$NEEDS_UPDATE" = "true" ]; then
     fi
     echo "[integration] Nives integration installed at $TARGET"
 
-    # Restart HA Core so it picks up the new integration files and processes discovery.
-    # This only runs on first install or after an integration update.
+    # Home Assistant has to be restarted before it will load the files we just
+    # wrote. Record that as a flag first: the attempt below is only the fast
+    # path, and it is the one that fails during a Supervisor-driven add-on
+    # update. The flag is what lets the ha-restart service retry later, once
+    # Supervisor is no longer busy with that update.
+    touch /data/.ha_restart_needed
+
+    # This matters more since 2.4.2: the integration only learns to read the API
+    # token once HA Core is running the new files. If no restart ever happens,
+    # the add-on notices (no token receipt) and simply leaves auth switched off,
+    # so nothing breaks — but the update is incomplete until HA reloads.
     #
-    # This matters more since 2.4.2: the server requires an API token, and the
-    # integration only learns to read that token once HA Core is running the new
-    # files. If this restart doesn't happen, the still-loaded old integration
-    # keeps calling the server without a token and every request comes back 401
-    # until Home Assistant is restarted by hand — so failures here are logged
-    # loudly rather than swallowed. (Unlike 2.4.0, a manual restart does fix it:
-    # the token comes from a file that is read on every setup, not from a
-    # one-shot discovery event.)
-    #
-    # --max-time matters too: nives-server waits on this oneshot, so a hung
-    # request here would stop the server ever starting.
+    # --max-time matters: nives-server waits on this oneshot, so a hung request
+    # here would stop the server ever starting.
     if [ -n "$SUPERVISOR_TOKEN" ]; then
         echo "[integration] Restarting HA Core to load updated integration..."
-        if curl -sf --max-time 30 -X POST \
+        CODE=$(curl -s -o /tmp/integration-restart-resp -w '%{http_code}' --max-time 30 -X POST \
             -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
-            http://supervisor/core/restart > /dev/null 2>&1; then
-            echo "[integration] HA Core restart triggered"
-        else
-            echo "[integration] WARNING: HA Core restart request FAILED."
-            echo "[integration]          The integration files are updated on disk but"
-            echo "[integration]          Home Assistant is still running the old ones."
-            echo "[integration]          Restart Home Assistant (Settings → System →"
-            echo "[integration]          Restart) if Nives stops responding."
-        fi
+            http://supervisor/core/restart 2>/dev/null)
+        case "$CODE" in
+            2*)
+                rm -f /data/.ha_restart_needed
+                echo "[integration] HA Core restart triggered"
+                ;;
+            *)
+                echo "[integration] HA Core restart request failed (HTTP ${CODE:-none}): $(head -c 200 /tmp/integration-restart-resp 2>/dev/null)"
+                echo "[integration] Will retry once the add-on has finished starting."
+                ;;
+        esac
+        rm -f /tmp/integration-restart-resp
     else
         echo "[integration] No SUPERVISOR_TOKEN — skipping HA Core restart"
     fi

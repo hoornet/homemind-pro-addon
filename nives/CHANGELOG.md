@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.3
+
+- **Updates now finish on their own.** When Nives updates, Home Assistant needs a quick restart to load the new companion integration. The add-on asks for that restart itself — but if Home Assistant is still busy finishing the update at that moment, the request doesn't land, and the update stays half-applied until you restart Home Assistant yourself. Nives now waits until it has finished starting and asks again, a few times, so this sorts itself out.
+- If it still can't get through, the add-on log says so plainly and tells you what to do. Nives keeps working either way.
+- The add-on log now records exactly why a restart request was turned down, instead of only that it was.
+
 ## 2.4.2
 
 - **The Nives API can be protected by an access token again — this time on existing installs too.** The add-on's API on port 3100 has until now accepted any request that could reach it, which meant anything else on your Home Assistant machine could talk to your assistant, control your devices through it, or erase what it remembers. It now uses an access token, generated on first start and kept on your own machine.
