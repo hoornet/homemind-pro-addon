@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.7
+
+- **Polish on 2.4.6's multi-automation support.** The assistant is now told explicitly that a request needing several automations means previewing them all together and creating them all after a single yes — so all models follow the flow 2.4.6 made possible, not just the ones that inferred it.
+- **A safety net for edits.** If a requested change to an existing automation would strip away all of its conditions — for example leaving a cooling rule running no matter who's home — Nives now points that out before you confirm, instead of quietly applying it.
+
 ## 2.4.6
 
 - **Fixes automations that were never created no matter how many times you said yes.** When a request needed two automations — "cool it when it's over 22, switch off when it's back to 20" — Nives would keep asking you to confirm and never actually create either one. It can now hold more than one pending change at a time, so a single yes creates both.

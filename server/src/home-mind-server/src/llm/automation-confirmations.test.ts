@@ -234,3 +234,21 @@ describe("several pending previews at once (an on/off pair)", () => {
     expect(isConfirmed(conv, "create_automation", on, "turn-2")).toBe(true);
   });
 });
+
+describe("update previews and condition wipes", () => {
+  it("warns when an update explicitly strips all conditions", () => {
+    const preview = describePending("update_automation", {
+      entity_id: "automation.bedroom_cooling",
+      condition: [],
+    });
+    expect((preview.notes as string[]).some((n) => /REMOVES ALL conditions/.test(n))).toBe(true);
+  });
+
+  it("does NOT warn when an update simply leaves conditions untouched", () => {
+    const preview = describePending("update_automation", {
+      entity_id: "automation.bedroom_cooling",
+      mode: "restart",
+    });
+    expect(preview.notes).toEqual([]);
+  });
+});
