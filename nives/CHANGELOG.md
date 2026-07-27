@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.4.2
+
+- **The Nives API can be protected by an access token again — this time on existing installs too.** The add-on's API on port 3100 has until now accepted any request that could reach it, which meant anything else on your Home Assistant machine could talk to your assistant, control your devices through it, or erase what it remembers. It now uses an access token, generated on first start and kept on your own machine.
+- **Nothing to set up, and nothing to redo if you were on 2.4.0.** The add-on leaves the token where its companion integration picks it up every time it starts, so new and existing installs are both covered. Home Assistant restarts once during the update.
+- **Protection switches on at the following add-on start, not this one.** The add-on waits until the integration has confirmed it actually has the token before it starts requiring one. That extra step is deliberate: it makes it impossible for the add-on to lock out its own integration, which is what went wrong in 2.4.0. Until then it behaves exactly as before, and the add-on log tells you which state it's in.
+- If the token can't be handed over at all, the add-on says so in its log and keeps accepting requests as before, rather than leaving you without an assistant.
+- If you call the API yourself (a script, or the add-on's port exposed to your network), you'll need to send the token — see "API access (advanced)" in the documentation for where to find it. `/api/health` stays open so monitoring keeps working.
+
 ## 2.4.1
 
 - **Fixes Assist not responding after updating to 2.4.0.** If you updated to 2.4.0 and Nives stopped answering ("Sorry, I couldn't reach the Nives server right now"), this release restores it. Update and it will work again — nothing else to do.

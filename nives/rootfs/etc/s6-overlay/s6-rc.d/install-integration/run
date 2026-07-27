@@ -40,12 +40,14 @@ if [ "$NEEDS_UPDATE" = "true" ]; then
     # Restart HA Core so it picks up the new integration files and processes discovery.
     # This only runs on first install or after an integration update.
     #
-    # This matters more since 2.4.0: the server now requires an API token, and the
-    # config entry only learns that token when HA Core reloads and processes the
-    # discovery message. If this restart doesn't happen, the running integration
+    # This matters more since 2.4.2: the server requires an API token, and the
+    # integration only learns to read that token once HA Core is running the new
+    # files. If this restart doesn't happen, the still-loaded old integration
     # keeps calling the server without a token and every request comes back 401
     # until Home Assistant is restarted by hand — so failures here are logged
-    # loudly rather than swallowed.
+    # loudly rather than swallowed. (Unlike 2.4.0, a manual restart does fix it:
+    # the token comes from a file that is read on every setup, not from a
+    # one-shot discovery event.)
     #
     # --max-time matters too: nives-server waits on this oneshot, so a hung
     # request here would stop the server ever starting.

@@ -29,11 +29,14 @@ done
 # Get our hostname (used by HA to reach this add-on on the internal network)
 ADDON_HOST=$(hostname)
 
-# Ship the API token in the discovery payload so the companion integration can
-# authenticate without the user copying anything. Home Assistant stores the
-# discovery config and hands it to the config flow, which writes the token into
-# the config entry — including for entries that already exist, so upgrades pick
-# it up automatically.
+# Ship the API token in the discovery payload so a brand-new install is
+# authenticated the moment the user confirms the discovered add-on.
+#
+# This only helps NEW entries. Supervisor deduplicates discovery messages, so an
+# install that already exists never sees this payload again — those pick the
+# token up from /config/nives/.api_token instead, which the integration re-reads
+# on every setup. Don't rely on this path for upgrades; 2.4.0 did and broke
+# Assist for everyone already installed.
 API_TOKEN=$(cat /data/.api_token 2>/dev/null || echo "")
 if [ -z "$API_TOKEN" ]; then
     echo "[discovery] WARNING: no /data/.api_token — the integration will be sent no token"

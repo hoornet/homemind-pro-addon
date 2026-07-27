@@ -112,12 +112,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         await self.async_set_unique_id(f"nives_addon_{host}")
 
-        # Push the token into an already-configured entry. The add-on re-announces
-        # itself on every start, so an existing install picks up the token on the
-        # next restart with nothing for the user to do — this is what lets the
-        # server start requiring auth without stranding anyone. Only include the
-        # token when we actually have one, so a discovery message without it can
-        # never blank out a working entry.
+        # Note: this only ever runs for a NEW entry. Supervisor deduplicates
+        # discovery messages, so an add-on that re-announces itself raises no
+        # new event and this flow is not re-entered — updates= below will not
+        # reach an install that already exists. Assuming otherwise is what broke
+        # Assist in 2.4.0. The token an existing entry actually uses comes from
+        # the file the add-on writes (see const.TOKEN_FILE_RELPATH), which is
+        # re-read on every setup.
         updates: dict[str, Any] = {CONF_API_URL: api_url}
         if api_token:
             updates[CONF_API_TOKEN] = api_token

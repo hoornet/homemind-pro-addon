@@ -144,27 +144,56 @@ write_env "HA_TOKEN" "$SUPERVISOR_TOKEN"
 write_env "SHODH_URL" "http://127.0.0.1:3030"
 write_env "SHODH_API_KEY" "$SHODH_KEY"
 
-# --- API auth (DISABLED in 2.4.1 — see below) ---
+# --- API auth ---
 #
-# 2.4.0 set API_TOKEN here and delivered the token to the integration through the
-# Supervisor discovery message. That does not work for installs that already
-# exist, and it broke Assist for them:
+# Hand the token to the companion integration through a file in /config. The
+# add-on has config:rw, so this lands in the directory Home Assistant reads its
+# own configuration from, and the integration re-reads it every time it sets up.
+# That is what makes it work for installs that already exist.
 #
-#   Supervisor DEDUPLICATES discovery messages. Re-POSTing /discovery for the
-#   same service returns the SAME uuid and does not raise a new discovery event,
-#   so Home Assistant never re-runs the config flow and
-#   _abort_if_unique_id_configured(updates=...) never gets the chance to write
-#   the token into the existing config entry. Verified on a real install: the
-#   entry kept only {api_url, user_id} across an add-on restart AND a full HA
-#   Core restart, while the server was already returning 401.
+# 2.4.0 tried to do this through the Supervisor discovery message instead, and
+# broke Assist for every existing user: Supervisor DEDUPLICATES discovery, so
+# re-announcing returns the same uuid, raises no new event, and the config flow
+# never re-runs — the entry never learned the token while the server had already
+# started rejecting it. A file has no such one-shot semantics.
 #
-# A fresh install is fine (the flow runs once, with the token). Every existing
-# install is not. Until the token is delivered by a mechanism that doesn't depend
-# on discovery, leave the middleware dormant — the server treats an unset
-# API_TOKEN as "no auth", which is the pre-2.4.0 behaviour.
+# Requiring the token is gated on PROOF that the integration can read it, not on
+# the assumption that it can. The integration writes back the SHA-256 of the
+# token it loaded; we only switch enforcement on once that receipt matches.
 #
-# The token is still generated and kept in /data/.api_token so the eventual fix
-# has a stable value to hand over.
+# So the first start after an update always leaves auth off: we hand the token
+# over, Home Assistant restarts into the new integration, and it leaves the
+# receipt. The next start of this add-on sees the receipt and starts requiring
+# the token. One extra restart in exchange for it being impossible to lock the
+# integration out — which is exactly what 2.4.0 did.
+#
+# Rotating the token invalidates the receipt, so auth falls back to off (not to
+# broken) until the integration confirms the new one.
+TOKEN_HANDOFF="/config/nives/.api_token"
+TOKEN_ACK="${TOKEN_HANDOFF}.ack"
+
+if mkdir -p "$(dirname "$TOKEN_HANDOFF")" 2>/dev/null &&
+    printf '%s' "$API_TOKEN" > "$TOKEN_HANDOFF" 2>/dev/null; then
+    chmod 600 "$TOKEN_HANDOFF" 2>/dev/null || true
+
+    EXPECTED_ACK=$(printf '%s' "$API_TOKEN" | openssl dgst -sha256 -r 2>/dev/null | cut -d' ' -f1)
+    ACTUAL_ACK=$(tr -d '[:space:]' < "$TOKEN_ACK" 2>/dev/null || echo "")
+
+    if [ -n "$EXPECTED_ACK" ] && [ "$ACTUAL_ACK" = "$EXPECTED_ACK" ]; then
+        write_env "API_TOKEN" "$API_TOKEN"
+        echo "[init] API authentication enabled"
+    else
+        echo "[init] API authentication not enabled yet — waiting for the Nives"
+        echo "[init]          integration to confirm it has the access token."
+        echo "[init]          This is normal right after an update; it takes effect"
+        echo "[init]          the next time the add-on starts."
+    fi
+else
+    echo "[init] WARNING: could not write ${TOKEN_HANDOFF}."
+    echo "[init]          Leaving the Nives API unauthenticated so the integration"
+    echo "[init]          keeps working. Port 3100 is reachable by anything on the"
+    echo "[init]          same network."
+fi
 
 # --- Server configuration (always the same in add-on mode) ---
 write_env "PORT" "3100"

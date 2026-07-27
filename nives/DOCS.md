@@ -100,13 +100,16 @@ If the integration doesn't appear, restart Home Assistant Core once — the add-
 
 ### API access (advanced)
 
-The add-on's HTTP API requires an access token. The token is generated on first
-start, stored at `/data/.api_token`, and handed to the companion integration
-automatically — **there is nothing to configure.**
+The add-on's HTTP API uses an access token. It is generated on first start and
+handed to the companion integration automatically — **there is nothing to
+configure.** The add-on only begins requiring the token once the integration has
+confirmed it has it, so the two can never get out of step; the add-on log says
+which state it is in on every start.
 
 It only matters if you call the API yourself (a script, or the add-on's port
-mapped to your network). In that case, read the token using the SSH or Terminal
-add-on and send it as a bearer token:
+mapped to your network). In that case, read it from your Home Assistant
+configuration folder — `nives/.api_token`, e.g. with the File Editor, SSH or
+Terminal add-on — and send it as a bearer token:
 
 ```
 curl -H "Authorization: Bearer <token>" http://<addon-host>:3100/api/chat ...
