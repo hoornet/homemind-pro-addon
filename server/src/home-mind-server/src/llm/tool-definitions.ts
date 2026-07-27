@@ -116,7 +116,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "create_automation",
     description:
-      "Create a new Home Assistant automation (a scheduled or event-triggered routine, e.g. 'turn the porch light on at sunset every day'). ONLY call this AFTER the user has explicitly confirmed they want it created — first restate the trigger and action in plain language and ask. The automation is created ENABLED and its alias is automatically prefixed with 'Nives: ' so the user can find and remove it in Settings → Automations. Provide trigger and action using Home Assistant's automation schema (the same shape as automations.yaml).",
+      "Create a new Home Assistant automation (a scheduled or event-triggered routine, e.g. 'turn the porch light on at sunset every day'). Call this AS SOON AS you have the details — do NOT ask the user for permission first. The FIRST call NEVER creates anything: it returns a 'confirmation_required' preview, and relaying that preview in plain language IS how you ask. Only after the user agrees in their NEXT message do you call this again with the same arguments to actually create it. Asking in text before the first call just makes the user confirm twice. The automation is created ENABLED and its alias is automatically prefixed with 'Nives: ' so the user can find and remove it in Settings → Automations. Provide trigger and action using Home Assistant's automation schema (the same shape as automations.yaml).",
     parameters: {
       type: "object",
       properties: {
@@ -162,7 +162,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "delete_automation",
     description:
-      "Delete a Home Assistant automation by its entity_id (get the entity_id from list_automations first). ONLY call this AFTER the user has explicitly confirmed the deletion — first name the automation you're about to remove and ask. Deletion is permanent.",
+      "Delete a Home Assistant automation by its entity_id (get the entity_id from list_automations first). Call this AS SOON AS you know which automation is meant — do NOT ask the user for permission first. The FIRST call NEVER deletes anything: it returns a 'confirmation_required' preview naming the automation, and relaying that IS how you ask. Only after the user agrees in their NEXT message do you call this again with the same entity_id to actually delete it. Asking in text before the first call just makes the user confirm twice. Deletion is permanent.",
     parameters: {
       type: "object",
       properties: {
@@ -178,7 +178,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "update_automation",
     description:
-      "Modify an existing automation — change its trigger, action, name, conditions, or mode. Get the entity_id from list_automations first. Provide ONLY the fields you want to change; everything else is kept as-is. ONLY call this AFTER the user confirms the change. (There is no in-place partial edit of a trigger/action — whatever you pass for a field fully replaces that field.)",
+      "Modify an existing automation — change its trigger, action, name, conditions, or mode. Get the entity_id from list_automations first. Provide ONLY the fields you want to change; everything else is kept as-is. Call this AS SOON AS you know what to change — do NOT ask the user for permission first. The FIRST call NEVER changes anything: it returns a 'confirmation_required' preview of the change, and relaying that IS how you ask. Only after the user agrees in their NEXT message do you call this again with the same arguments to apply it. Asking in text before the first call just makes the user confirm twice. (There is no in-place partial edit of a trigger/action — whatever you pass for a field fully replaces that field.)",
     parameters: {
       type: "object",
       properties: {

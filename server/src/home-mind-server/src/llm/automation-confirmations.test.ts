@@ -170,3 +170,67 @@ describe("preview notes — surfacing what the payload does NOT do", () => {
     expect((preview.notes as string[]).some((n) => /checked once/i.test(n))).toBe(true);
   });
 });
+
+describe("several pending previews at once (an on/off pair)", () => {
+  const conv = "conv-pair";
+  const on = {
+    alias: "Bedroom cooling at 20:00-22:00 if over 22C",
+    trigger: { platform: "numeric_state", entity_id: "sensor.temperatura_2", above: 22 },
+    action: { service: "climate.set_temperature" },
+  };
+  const off = {
+    alias: "Bedroom cooling stop when 20C",
+    trigger: { platform: "numeric_state", entity_id: "sensor.temperatura_2", below: 20 },
+    action: { service: "climate.turn_off" },
+  };
+
+  beforeEach(() => clearConfirmation(conv));
+
+  it("confirms BOTH halves after one yes — the loop that created nothing", () => {
+    // Live failure: "on above 22, off below 20" previewed both in one turn, then
+    // looped forever. A single slot per conversation meant the second preview
+    // overwrote the first, so each create found the OTHER automation pending,
+    // mismatched, and re-previewed — five rounds of "shall I create these?" and
+    // an empty automations.yaml.
+    recordPreview(conv, "create_automation", on, "turn-1");
+    recordPreview(conv, "create_automation", off, "turn-1");
+
+    expect(isConfirmed(conv, "create_automation", on, "turn-2")).toBe(true);
+    expect(isConfirmed(conv, "create_automation", off, "turn-2")).toBe(true);
+  });
+
+  it("still refuses to confirm in the same turn the preview was recorded", () => {
+    recordPreview(conv, "create_automation", on, "turn-1");
+    recordPreview(conv, "create_automation", off, "turn-1");
+    expect(isConfirmed(conv, "create_automation", on, "turn-1")).toBe(false);
+    expect(isConfirmed(conv, "create_automation", off, "turn-1")).toBe(false);
+  });
+
+  it("each half is single-use", () => {
+    recordPreview(conv, "create_automation", on, "turn-1");
+    expect(isConfirmed(conv, "create_automation", on, "turn-2")).toBe(true);
+    expect(isConfirmed(conv, "create_automation", on, "turn-3")).toBe(false);
+  });
+
+  it("a third, unrelated automation is still not confirmed by either", () => {
+    recordPreview(conv, "create_automation", on, "turn-1");
+    recordPreview(conv, "create_automation", off, "turn-1");
+    expect(
+      isConfirmed(conv, "create_automation", { ...on, alias: "Something else entirely" }, "turn-2")
+    ).toBe(false);
+  });
+
+  it("clearConfirmation drops every pending preview for the conversation", () => {
+    recordPreview(conv, "create_automation", on, "turn-1");
+    recordPreview(conv, "create_automation", off, "turn-1");
+    clearConfirmation(conv);
+    expect(isConfirmed(conv, "create_automation", on, "turn-2")).toBe(false);
+    expect(isConfirmed(conv, "create_automation", off, "turn-2")).toBe(false);
+  });
+
+  it("does not leak across conversations", () => {
+    recordPreview(conv, "create_automation", on, "turn-1");
+    expect(isConfirmed("other-conv", "create_automation", on, "turn-2")).toBe(false);
+    expect(isConfirmed(conv, "create_automation", on, "turn-2")).toBe(true);
+  });
+});

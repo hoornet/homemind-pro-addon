@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.6
+
+- **Fixes automations that were never created no matter how many times you said yes.** When a request needed two automations — "cool it when it's over 22, switch off when it's back to 20" — Nives would keep asking you to confirm and never actually create either one. It can now hold more than one pending change at a time, so a single yes creates both.
+- **Nives asks once, not twice.** Confirming a new, changed or deleted automation took two rounds of "yes" where one was meant to be enough.
+- **Nives stays in the language you're speaking.** It could drift into another language mid-conversation — most easily when your devices are named in a different language from the one you're chatting in, or after a short reply like "yes". Device and room names are left spelled as they are, in a reply written in your language.
+
 ## 2.4.5
 
 - **Automations now account for everything you asked for.** If you describe several things at once — "when I'm home", "between 20:00 and 22:00", "and switch it off again when it cools down" — Nives now either builds every part in, or tells you plainly which part it hasn't, before you confirm. It will no longer describe a condition that isn't actually in the automation.

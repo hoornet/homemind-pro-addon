@@ -90,3 +90,31 @@ describe("toOpenAITools", () => {
     expect(fn.parameters.required).toEqual(["domain", "service"]);
   });
 });
+
+describe("gated tools describe the preview-first flow, not a pre-call question", () => {
+  // Regression: these descriptions predated the server-enforced confirmation
+  // gate (v2.1.9-2.1.11) and still said "ONLY call this AFTER the user has
+  // explicitly confirmed". The gate makes the FIRST call the preview, so the
+  // model asked in text, got a yes, called the tool, got confirmation_required,
+  // and asked a SECOND time. Observed live: "delete the bedroom cooling
+  // automation" took two rounds of "da" before anything happened. prompts.ts
+  // described the flow correctly all along; the tool description sits closer to
+  // the call site and won.
+  const GATED = ["create_automation", "update_automation", "delete_automation"];
+
+  for (const name of GATED) {
+    const def = () => TOOL_DEFINITIONS.find((t) => t.name === name)!;
+
+    it(`${name} does not tell the model to ask before calling`, () => {
+      expect(def().description).not.toMatch(/ONLY call this AFTER/i);
+      expect(def().description).not.toMatch(/first (restate|name) .*and ask/i);
+    });
+
+    it(`${name} states that the first call previews without acting`, () => {
+      const d = def().description;
+      expect(d).toMatch(/FIRST call NEVER/);
+      expect(d).toMatch(/confirmation_required/);
+      expect(d).toMatch(/NEXT message/);
+    });
+  }
+});
