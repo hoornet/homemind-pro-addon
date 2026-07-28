@@ -16,6 +16,11 @@ export interface ChatRequest {
   customPrompt?: string;
   /** Optional images (data URLs or https URLs) for vision-capable models. */
   images?: string[];
+  /**
+   * The caller's UI language (e.g. "sl", "en-US"). Used only as a tie-breaker
+   * in the system prompt when the user's own words don't indicate a language.
+   */
+  language?: string;
 }
 
 /**

@@ -63,7 +63,7 @@ export class LLMClient implements IChatEngine {
     request: ChatRequest,
     onChunk?: StreamCallback
   ): Promise<ChatResponse> {
-    const { message, userId, conversationId, isVoice = false, customPrompt } = request;
+    const { message, userId, conversationId, isVoice = false, customPrompt, language } = request;
     const toolsUsed: string[] = [];
     const turnId = randomUUID(); // nonce for this turn — powers the automation confirmation gate
 
@@ -87,7 +87,7 @@ export class LLMClient implements IChatEngine {
       ? this.scanner.formatCheatSheet()
       : undefined;
     const homeLayout = this.topology.hasLayout() ? this.topology.formatSection() : undefined;
-    const systemPrompt = buildSystemPrompt(factContents, isVoice, customPrompt, deviceCheatSheet, homeLayout);
+    const systemPrompt = buildSystemPrompt(factContents, isVoice, customPrompt, deviceCheatSheet, homeLayout, language);
 
     // 3. Load conversation history if we have a conversationId
     const messages: Anthropic.MessageParam[] = [];

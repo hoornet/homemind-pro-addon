@@ -244,11 +244,73 @@ describe("update previews and condition wipes", () => {
     expect((preview.notes as string[]).some((n) => /REMOVES ALL conditions/.test(n))).toBe(true);
   });
 
-  it("does NOT warn when an update simply leaves conditions untouched", () => {
+  it("does NOT give the wipe warning when an update simply leaves conditions untouched", () => {
     const preview = describePending("update_automation", {
       entity_id: "automation.bedroom_cooling",
       mode: "restart",
     });
-    expect(preview.notes).toEqual([]);
+    // The untouched-fields enumeration still applies; the WIPE warning must not.
+    expect((preview.notes as string[]).some((n) => /REMOVES ALL conditions/.test(n))).toBe(false);
+  });
+});
+
+describe("mixed-trigger note and untouched-fields enumeration (2026-07-27 live gaps)", () => {
+  it("warns when a time trigger sits next to a numeric trigger with no numeric condition", () => {
+    // The as-built bedroom on-rule: at 20:00 sharp the AC switched on
+    // regardless of temperature, because the >22 threshold was only a trigger.
+    const notes = previewNotes({
+      alias: "Bedroom cooling at 20:00-22:00 if over 22C",
+      trigger: [
+        { platform: "numeric_state", entity_id: "sensor.temperatura_2", above: 22 },
+        { platform: "time", at: "20:00:00" },
+      ],
+      condition: [
+        { condition: "state", entity_id: "person.jure", state: "home" },
+        { condition: "time", after: "20:00:00", before: "22:00:00" },
+      ],
+      action: { service: "climate.set_temperature" },
+    });
+    expect(notes.some((n) => /REGARDLESS of the value/.test(n))).toBe(true);
+  });
+
+  it("stays quiet when the threshold is also a condition", () => {
+    const notes = previewNotes({
+      alias: "Bedroom cooling",
+      trigger: [
+        { platform: "numeric_state", entity_id: "sensor.temperatura_2", above: 22 },
+        { platform: "time", at: "20:00:00" },
+      ],
+      condition: [
+        { condition: "numeric_state", entity_id: "sensor.temperatura_2", above: 22 },
+        { condition: "state", entity_id: "person.jure", state: "home" },
+      ],
+      action: { service: "climate.set_temperature" },
+    });
+    expect(notes.some((n) => /REGARDLESS of the value/.test(n))).toBe(false);
+  });
+
+  it("update preview names the untouched fields", () => {
+    // The live no-op: asked to lift a time window, the model only ever sent
+    // trigger — and narrated the condition change as done.
+    const preview = describePending("update_automation", {
+      entity_id: "automation.nives_bedroom_cooling_stop_when_20c",
+      trigger: [{ platform: "numeric_state", entity_id: "sensor.temperatura_2", below: 20 }],
+    });
+    const note = (preview.notes as string[]).find((n) => /changes ONLY/.test(n));
+    expect(note).toContain("changes ONLY: trigger");
+    expect(note).toContain("condition");
+    expect(note).toContain("action");
+  });
+
+  it("update touching every field gets no untouched-fields note", () => {
+    const preview = describePending("update_automation", {
+      entity_id: "automation.x",
+      alias: "A",
+      trigger: {},
+      condition: [{ condition: "state" }],
+      action: {},
+      mode: "single",
+    });
+    expect((preview.notes as string[]).some((n) => /changes ONLY/.test(n))).toBe(false);
   });
 });

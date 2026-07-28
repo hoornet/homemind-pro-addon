@@ -97,3 +97,17 @@ describe("buildSystemPromptText (OpenAI)", () => {
     expect(text).toContain("No memories yet.");
   });
 });
+
+describe("interface-language tie-breaker line", () => {
+  it("appears in the dynamic block when a language is passed", async () => {
+    const { buildSystemPromptText } = await import("./prompts.js");
+    const prompt = buildSystemPromptText([], false, undefined, undefined, undefined, "sl");
+    expect(prompt).toContain("Interface language: sl");
+    expect(prompt).toContain("ONLY when the user's own words");
+  });
+
+  it("is absent when no language is passed", async () => {
+    const { buildSystemPromptText } = await import("./prompts.js");
+    expect(buildSystemPromptText([])).not.toContain("Interface language");
+  });
+});

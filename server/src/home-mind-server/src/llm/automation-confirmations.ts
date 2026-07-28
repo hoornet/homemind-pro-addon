@@ -199,6 +199,23 @@ export function previewNotes(input: Record<string, unknown>): string[] {
     );
   }
 
+  // Triggers are independent: each one fires the automation on its own. A
+  // numeric_state TRIGGER therefore does not gate the time trigger next to it —
+  // only a CONDITION gates every path. Live consequence (2026-07-27): "cool the
+  // bedroom 20:00-22:00 if over 22C" got a numeric trigger + a 20:00 trigger and
+  // no numeric condition, so at 20:00 sharp the AC switched on regardless of
+  // temperature — and when asked to fix it, the model refused, reasoning the
+  // threshold was "already covered" because it saw the trigger.
+  if (
+    triggerKinds.includes("time") &&
+    triggerKinds.includes("numeric_state") &&
+    !conditionKinds.includes("numeric_state")
+  ) {
+    notes.push(
+      "This automation has BOTH a fixed-time trigger and a value-threshold trigger, but NO value condition. Triggers fire independently, so at the fixed time the action runs REGARDLESS of the value — the threshold on the other trigger does not protect it. If the action should only happen past the threshold, the same threshold must ALSO be a condition."
+    );
+  }
+
   return notes;
 }
 
@@ -220,15 +237,29 @@ export function describePending(
         notes: previewNotes(input),
       };
     case "update_automation": {
+      const FIELDS = ["alias", "trigger", "condition", "action", "mode"];
       const changes: Record<string, unknown> = {};
-      for (const key of ["alias", "trigger", "condition", "action", "mode"]) {
+      for (const key of FIELDS) {
         if (input[key] !== undefined) changes[key] = input[key];
+      }
+      const changed = FIELDS.filter((key) => input[key] !== undefined);
+      const untouched = FIELDS.filter((key) => input[key] === undefined);
+      const notes: string[] = [];
+      // Enumerate what this update does NOT do, in words. Live consequence
+      // (2026-07-27): asked to lift a time window off an automation, the model
+      // sent payloads that only ever replaced `trigger`, while telling the user
+      // the window was removed. The preview showed the changes accurately —
+      // but nothing stated that `condition` was untouched, so the narration
+      // went unchallenged and a successful no-op was reported as the fix.
+      if (untouched.length > 0) {
+        notes.push(
+          `This update changes ONLY: ${changed.join(", ") || "(nothing)"}. It does NOT touch: ${untouched.join(", ")} — those stay exactly as they are. If the user asked for a change to one of those fields, this update does NOT deliver it; say so instead of describing it as done.`
+        );
       }
       // An update only replaces the fields it passes, so an absent condition
       // here means "unchanged" — unlike create, no warning for that. But a
       // condition passed as an EMPTY array/null strips every condition off the
       // existing automation, which is almost never what the user asked for.
-      const notes: string[] = [];
       if (input.condition !== undefined && asArray(input.condition).length === 0) {
         notes.push(
           "This update REMOVES ALL conditions from the automation — it will then run every time its trigger fires, regardless of who is home or the time of day. If the user only wanted to change something else, do not pass the condition field at all."

@@ -88,6 +88,7 @@ class NivesConversationAgent(ConversationEntity):
                 message=user_input.text,
                 user_id=user_id,
                 conversation_id=conversation_id,
+                language=user_input.language,
             )
         except UsageLimitError:
             _LOGGER.warning("Nives usage limit reached")
@@ -158,6 +159,7 @@ class NivesConversationAgent(ConversationEntity):
         message: str,
         user_id: str,
         conversation_id: str | None,
+        language: str | None = None,
     ) -> str:
         """Call the Nives API."""
         url = f"{api_url}{API_CHAT_ENDPOINT}"
@@ -167,6 +169,13 @@ class NivesConversationAgent(ConversationEntity):
             "userId": user_id,
             "conversationId": conversation_id,
         }
+        # The Assist pipeline's language (e.g. "sl", "en"). Without it the model
+        # has no anchor at all and infers the language from context that is
+        # soaked in native-language entity names — which is how an English
+        # question got a Slovenian answer. The server uses it only as a
+        # tie-breaker; the language of the user's actual words always wins.
+        if language:
+            payload["language"] = language
 
         custom_prompt = self.entry.options.get(CONF_CUSTOM_PROMPT)
         if custom_prompt:

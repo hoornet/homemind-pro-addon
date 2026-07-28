@@ -16,6 +16,10 @@ const ChatRequestSchema = z.object({
   conversationId: z.string().optional(),
   isVoice: z.boolean().default(false),
   customPrompt: z.string().optional(),
+  // The caller's UI language (e.g. "sl", "en-US") — in the add-on this is the
+  // Assist pipeline's language. A tie-breaker hint only: the language of the
+  // user's actual words always wins.
+  language: z.string().max(35).optional(),
   // Optional images for vision-capable models. Each is a data URL
   // ("data:image/jpeg;base64,…") or a plain https URL. Forwarded to the model
   // as image content; ignored by text-only models.

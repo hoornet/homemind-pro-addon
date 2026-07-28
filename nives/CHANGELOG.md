@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.8
+
+- **Nives now answers in the language you ask in — reliably.** Until now it had no idea what language your Home Assistant is set to, and guessed from context; in a home full of, say, Slovenian device names, that could mean a Slovenian answer to an English question. The add-on now passes your Assist pipeline's language along as the default, while the language you actually write in always takes priority.
+- **Edits to automations now say what they leave alone.** When Nives proposes a change to an existing automation, it now spells out which parts stay untouched — so a request it only half-addressed can't be presented as fully done.
+- **A subtle automation trap is now caught before you confirm.** An automation with both a fixed-time trigger and a threshold trigger (say, "at 20:00" and "above 22°C") runs at the fixed time regardless of the threshold, unless the threshold is also a condition. Nives now warns about exactly this when proposing such an automation — and knows to add the condition in the first place.
+
 ## 2.4.7
 
 - **Polish on 2.4.6's multi-automation support.** The assistant is now told explicitly that a request needing several automations means previewing them all together and creating them all after a single yes — so all models follow the flow 2.4.6 made possible, not just the ones that inferred it.

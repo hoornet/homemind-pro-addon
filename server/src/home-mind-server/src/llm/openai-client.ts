@@ -72,7 +72,7 @@ export class OpenAIChatEngine implements IChatEngine {
     request: ChatRequest,
     onChunk?: StreamCallback
   ): Promise<ChatResponse> {
-    const { message, userId, conversationId, isVoice = false, customPrompt } = request;
+    const { message, userId, conversationId, isVoice = false, customPrompt, language } = request;
     const toolsUsed: string[] = [];
     const turnId = randomUUID(); // nonce for this turn — powers the automation confirmation gate
 
@@ -96,7 +96,7 @@ export class OpenAIChatEngine implements IChatEngine {
       ? this.scanner.formatCheatSheet()
       : undefined;
     const homeLayout = this.topology.hasLayout() ? this.topology.formatSection() : undefined;
-    const systemPrompt = buildSystemPromptText(factContents, isVoice, customPrompt, deviceCheatSheet, homeLayout);
+    const systemPrompt = buildSystemPromptText(factContents, isVoice, customPrompt, deviceCheatSheet, homeLayout, language);
 
     // 3. Load conversation history
     const messages: OpenAI.ChatCompletionMessageParam[] = [

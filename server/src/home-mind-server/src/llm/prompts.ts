@@ -76,6 +76,7 @@ A "confirmation_required" result means NOTHING happened yet — relay the previe
 **COVER THE WHOLE REQUEST — NEVER SILENTLY DROP A PART:** One sentence often carries several constraints ("when I'm at home", "between 20:00 and 22:00", "and turn it off again when it drops to 20"). EVERY constraint the user states must either end up in the arguments as a trigger or a condition, or be named out loud as NOT included. NEVER describe a trigger or condition you did not actually pass — describe ONLY the arguments you sent, and repeat what the preview's \`notes\` say.
 - Presence ("when I'm home") is a \`state\` condition on the person entity — find it with **search_entities**. It is NOT optional detail; leaving it out changes what the automation does.
 - A time WINDOW ("between 20:00 and 22:00") is a \`time\` condition with \`after\` and \`before\`. A single \`time\` trigger is NOT a window: it fires once, at that instant. If the user wants it to react whenever a value changes during the window, ALWAYS add a \`numeric_state\` trigger as well as the \`time\` trigger.
+- TRIGGERS ARE INDEPENDENT: each trigger fires the automation on its own, and a threshold on one trigger does NOT protect the others. With a \`numeric_state\` trigger AND a \`time\` trigger, the action runs at the fixed time regardless of the value — if it should only happen past the threshold, the SAME threshold must ALSO be a \`condition\`. This applies when reading an existing automation too: a threshold that appears only under \`triggers\` is NOT "already covered".
 - "Turn it on when above X, and off again when it drops to Y" needs TWO automations. Say that in the SAME message, and once the first is confirmed, immediately create the second. NEVER offer to do the second "separately" and then stop — if you said you would create it, create it.
 
 **MANAGING automations:** To see what exists ("what automations do I have / did you make?"), call **list_automations** (read-only — no confirmation needed). To EDIT one ("change that to 22:00", "also turn off the hallway light") use **update_automation** with only the fields that change; to REMOVE one use **delete_automation**. Both use the SAME two-step confirm flow as create — call once to get a "confirmation_required" preview, relay it and ask, then call AGAIN with the same arguments after the user says yes (only a "success" result means it actually happened). Get the entity_id from list_automations first. Deletion is permanent.
@@ -266,7 +267,8 @@ export function buildSystemPrompt(
   isVoice: boolean = false,
   customPrompt?: string,
   deviceCheatSheet?: string,
-  homeLayout?: string
+  homeLayout?: string,
+  language?: string
 ): CachedSystemPrompt {
   const factsText =
     facts.length > 0 ? facts.map((f) => `- ${f}`).join("\n") : "No memories yet.";
@@ -281,6 +283,14 @@ export function buildSystemPrompt(
 
   const instructions = isVoice ? VOICE_INSTRUCTIONS : SYSTEM_INSTRUCTIONS;
 
+  // Tie-breaker only. The Language rules above still hold: the user's own
+  // words always win, and a bare "yes"/"da" keeps the previous reply's
+  // language. This anchors the FIRST reply of a conversation, where the model
+  // otherwise infers a language from entity names and remembered facts.
+  const languageLine = language
+    ? `\n- Interface language: ${language} — the default for your reply ONLY when the user's own words don't clearly indicate a language.`
+    : "";
+
   // Dynamic content that changes per request
   const layoutSection = homeLayout ? `\n\n${homeLayout}` : "";
   const deviceSection = deviceCheatSheet ? `\n\n${deviceCheatSheet}` : "";
@@ -288,7 +298,7 @@ export function buildSystemPrompt(
 ## Current Context:
 - Date/Time: ${dateTimeStr}
 - ISO Timestamp (now, UTC): ${isoTimestamp}
-- Local midnight today (UTC): ${localMidnightIso}  ← use this as start_time for "today" history queries, NOT 00:00:00Z
+- Local midnight today (UTC): ${localMidnightIso}  ← use this as start_time for "today" history queries, NOT 00:00:00Z${languageLine}
 
 ## What You Remember About This User:
 ${factsText}${layoutSection}${deviceSection}`;
@@ -317,7 +327,8 @@ export function buildSystemPromptText(
   isVoice: boolean = false,
   customPrompt?: string,
   deviceCheatSheet?: string,
-  homeLayout?: string
+  homeLayout?: string,
+  language?: string
 ): string {
   const factsText =
     facts.length > 0 ? facts.map((f) => `- ${f}`).join("\n") : "No memories yet.";
@@ -332,6 +343,14 @@ export function buildSystemPromptText(
 
   const instructions = isVoice ? VOICE_INSTRUCTIONS : SYSTEM_INSTRUCTIONS;
 
+  // Tie-breaker only. The Language rules above still hold: the user's own
+  // words always win, and a bare "yes"/"da" keeps the previous reply's
+  // language. This anchors the FIRST reply of a conversation, where the model
+  // otherwise infers a language from entity names and remembered facts.
+  const languageLine = language
+    ? `\n- Interface language: ${language} — the default for your reply ONLY when the user's own words don't clearly indicate a language.`
+    : "";
+
   const layoutSection = homeLayout ? `\n\n${homeLayout}` : "";
   const deviceSection = deviceCheatSheet ? `\n\n${deviceCheatSheet}` : "";
 
@@ -340,7 +359,7 @@ export function buildSystemPromptText(
 ## Current Context:
 - Date/Time: ${dateTimeStr}
 - ISO Timestamp (now, UTC): ${isoTimestamp}
-- Local midnight today (UTC): ${localMidnightIso}  ← use this as start_time for "today" history queries, NOT 00:00:00Z
+- Local midnight today (UTC): ${localMidnightIso}  ← use this as start_time for "today" history queries, NOT 00:00:00Z${languageLine}
 
 ## What You Remember About This User:
 ${factsText}${layoutSection}${deviceSection}`;
