@@ -81,6 +81,14 @@ class NivesConversationAgent(ConversationEntity):
 
         conversation_id = user_input.conversation_id
 
+        # Voice satellites (Voice PE etc.) always carry a device_id; the
+        # dashboard/app Assist dialog does not. The server uses this to switch
+        # to its voice persona — shorter prompt, tighter token budget — so
+        # spoken answers don't read like essays. (The legacy HACS integration
+        # keyed on agent_id, but modern HA sets agent_id on every routed
+        # request — that heuristic would mark ALL requests as voice.)
+        is_voice = user_input.device_id is not None
+
         try:
             response_text = await self._call_api(
                 api_url=data.api_url,
@@ -89,6 +97,7 @@ class NivesConversationAgent(ConversationEntity):
                 user_id=user_id,
                 conversation_id=conversation_id,
                 language=user_input.language,
+                is_voice=is_voice,
             )
         except UsageLimitError:
             _LOGGER.warning("Nives usage limit reached")
@@ -160,6 +169,7 @@ class NivesConversationAgent(ConversationEntity):
         user_id: str,
         conversation_id: str | None,
         language: str | None = None,
+        is_voice: bool = False,
     ) -> str:
         """Call the Nives API."""
         url = f"{api_url}{API_CHAT_ENDPOINT}"
@@ -168,6 +178,7 @@ class NivesConversationAgent(ConversationEntity):
             "message": message,
             "userId": user_id,
             "conversationId": conversation_id,
+            "isVoice": is_voice,
         }
         # The Assist pipeline's language (e.g. "sl", "en"). Without it the model
         # has no anchor at all and infers the language from context that is

@@ -65,9 +65,33 @@ Nives bundles two services into one add-on:
 - **Nives server** — the conversation engine. Connects to Home Assistant automatically (no URL or token to configure) and controls your devices through HA's own tools.
 - **Shodh memory** — an on-device cognitive memory with semantic search, so Nives surfaces the right context at the right moment. The memory store itself never leaves your HA machine. ([Shodh Memory](https://github.com/varun29ankuS/shodh-memory) is an independent open-source project — Nives integrates it, and the same engine powers home-mind.)
 
+## Nives or home-mind?
+
+People regularly ask how Nives relates to **[home-mind](https://github.com/hoornet/home-mind)** — reasonable, since both come from the same author. Short version: **it's the same brain in a different box, and Nives has grown extra tools.**
+
+Nives started as a fork of the home-mind server, so the core — the conversation engine and the memory layer — is shared heritage. Since then they've deliberately become two independent products aimed at two kinds of people:
+
+- **home-mind** is the DIY path: Docker Compose, run the server and [Shodh Memory](https://github.com/varun29ankuS/shodh-memory) yourself, install the integration, wire it together. Full control, every choice yours, completely hands-on.
+- **Nives** is the same stack as **one Home Assistant add-on**: one container, the companion integration installs itself, Supervisor auto-discovers it. Add repo → install → paste a key → done. In most cases you never need a terminal.
+
+What has actually diverged:
+
+| | home-mind | Nives |
+|---|---|---|
+| **Install** | Docker Compose + manual integration setup | One HA add-on, self-configuring |
+| **HA tools** | 5 (read state, list/search entities, call services, history) | 10 — those plus automation **create/list/update/delete** and service discovery, behind a server-enforced confirmation gate |
+| **AI Task** | — | `ai_task.generate_data` (text + structured output), usable inside your automations |
+| **Vision** | — | camera snapshots as input — "is this expected?" on a doorbell frame |
+| **Voice satellites** | — | reopens the mic when it asks you a question (Voice PE `continue_conversation`) |
+| **arm64 / Raspberry Pi** | official Shodh Docker image is amd64-only | add-on ships arm64 binaries — works on a Pi / arm64 HAOS out of the box |
+| **Models** | BYOK: Anthropic / OpenAI / OpenRouter / Ollama | same BYOK, plus optional managed [Nives Cloud](https://nives.house) |
+
+Both are AGPL-3.0 with open repos, and both are maintained. There are **no features locked behind the Nives subscription** — Cloud exists purely as the less-tinkering option, and the BYOK path is free and never touches our servers. If you enjoy owning every moving part, home-mind is built for you; if you'd rather it just work, that's Nives.
+
 ## Related projects
 
-- **[home-mind](https://github.com/hoornet/home-mind)** — the open-source server Nives grew from (AGPL-3.0). An independent project; run it yourself if you prefer the fully-OSS path.
+- **[home-mind](https://github.com/hoornet/home-mind)** — the open-source server Nives grew from (AGPL-3.0). An independent project; run it yourself if you prefer the fully-DIY path.
+- **[Shodh Memory](https://github.com/varun29ankuS/shodh-memory)** — the cognitive memory engine powering both, by [@varun29ankuS](https://github.com/varun29ankuS). We integrate it, we didn't write it — and neither project would exist without it.
 - **[nives.house](https://nives.house)** — the optional Nives Cloud service.
 
 ## Support & feedback

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.9
+
+- **Voice answers are now actually built for voice.** Nives has always had a voice mode — a tighter persona that answers the way you'd want something read aloud, briefly — but the add-on never told the server when a request came from a voice satellite, so spoken questions got the full written-chat treatment. Requests from voice devices (Voice PE and friends) are now flagged, and answers through the speaker get properly conversational. Typed chat is unchanged.
+- The project README now answers the most-asked question — how Nives relates to its open-source sister project home-mind — with a proper side-by-side comparison.
+
 ## 2.4.8
 
 - **Nives now answers in the language you ask in — reliably.** Until now it had no idea what language your Home Assistant is set to, and guessed from context; in a home full of, say, Slovenian device names, that could mean a Slovenian answer to an English question. The add-on now passes your Assist pipeline's language along as the default, while the language you actually write in always takes priority.
