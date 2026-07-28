@@ -27,15 +27,15 @@ Nives needs a language model to do the thinking. You have two options — pick o
 
 The no-fuss option, and the best choice for most people — especially if you're new to this, or you'd simply rather not spend your evenings benchmarking models and tweaking settings.
 
-With Nives Cloud you **never choose, test, or babysit a model.** Behind the scenes we run a **curated, always-current selection of top models** and keep it updated for you — when a better or faster one comes along, or one gets retired, we swap it on our side. Your assistant just keeps getting better, with nothing for you to install or change.
+With Nives Cloud you **never choose, test, or babysit a model.** Behind the scenes we run **the best model for the job, always current** — we keep testing the field, and when a better one comes along (or ours gets retired) we swap it on our side. Your assistant just keeps getting better, with nothing for you to install or change.
 
 **How it works:**
 
-1. Sign up at **[nives.house](https://nives.house)** and pick a plan.
+1. Sign up at **[nives.house](https://nives.house)** — one plan, everything included.
 2. Copy the key it gives you.
 3. Paste it into the add-on's **Cloud** section and save.
 
-That's it — no AI provider accounts to manage, no model names to research, no surprise bills (each plan includes a monthly usage allowance). Plans differ by **speed, monthly usage, and how capable the models are**, all described in plain terms so you can choose by *experience* rather than by model spec sheets. See **[nives.house](https://nives.house)** for current plans.
+That's it — no AI provider accounts to manage, no model names to research, no surprise bills (a monthly usage allowance is included). See **[nives.house](https://nives.house)** for current pricing.
 
 ### Bring Your Own Key (BYOK) — for tinkerers
 

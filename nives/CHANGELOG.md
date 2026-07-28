@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.10
+
+- **Docs refresh: Nives Cloud is now one plan.** The README and add-on docs used to describe multiple Cloud plans differing by speed and model capability. Nives Cloud has since moved to a single plan with one carefully chosen model for everyone — kept current for you, swapped behind the scenes whenever a better one comes along. The docs now say exactly that. Nothing changes in the add-on itself, and BYOK is untouched.
+
 ## 2.4.9
 
 - **Voice answers are now actually built for voice.** Nives has always had a voice mode — a tighter persona that answers the way you'd want something read aloud, briefly — but the add-on never told the server when a request came from a voice satellite, so spoken questions got the full written-chat treatment. Requests from voice devices (Voice PE and friends) are now flagged, and answers through the speaker get properly conversational. Typed chat is unchanged.
