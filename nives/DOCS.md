@@ -94,9 +94,9 @@ Use your own API key from any supported provider. Your data goes directly to the
 
 The **Nives** conversation agent integration is automatically installed when the add-on starts. No manual installation needed.
 
-After the add-on starts, go to **Settings > Voice assistants** and select **Nives** as your conversation agent.
+After installing or updating, Home Assistant needs one restart to load the integration — Nives leaves a notification asking for it, and you restart whenever it suits you (Settings > System > Restart). The add-on never restarts Home Assistant by itself.
 
-If the integration doesn't appear, restart Home Assistant Core once — the add-on installs it on startup.
+Once restarted, go to **Settings > Voice assistants** and select **Nives** as your conversation agent.
 
 ### API access (advanced)
 
@@ -151,7 +151,7 @@ This is true in **both** Cloud and BYOK mode — the difference is only *which* 
 ## Troubleshooting
 
 - **Add-on won't start**: Check the Log tab. Most common issue: missing or invalid API key.
-- **Nives doesn't appear in Voice assistants**: Restart Home Assistant Core once after the add-on starts.
+- **Nives doesn't appear in Voice assistants**: Restart Home Assistant Core once after the add-on starts — there should be a notification reminding you.
 - **Slow responses**: LLM responses can take 10–60 seconds depending on the model and tool usage. This is normal.
 - **High memory usage**: Shodh Memory has a known memory leak. The add-on includes a watchdog that restarts it automatically when it exceeds 512 MB.
 

@@ -12,8 +12,10 @@ fi
 
 # Check if files need updating by comparing manifest versions
 NEEDS_UPDATE=false
+FRESH_INSTALL=false
 if [ ! -d "$TARGET" ]; then
     NEEDS_UPDATE=true
+    FRESH_INSTALL=true
     echo "[integration] Installing Nives integration..."
 elif [ -f "$SOURCE/manifest.json" ] && [ -f "$TARGET/manifest.json" ]; then
     SOURCE_VER=$(jq -r '.version' "$SOURCE/manifest.json" 2>/dev/null || echo "")
@@ -38,27 +40,22 @@ if [ "$NEEDS_UPDATE" = "true" ]; then
     echo "[integration] Nives integration installed at $TARGET"
 
     # Home Assistant has to be restarted before it will load the files we just
-    # wrote. Record that as a flag first: the attempt below is only the fast
-    # path, and it is the one that fails during a Supervisor-driven add-on
-    # update. The flag is what lets the ha-restart service retry later, once
-    # Supervisor is no longer busy with that update.
-    touch /data/.ha_restart_needed
-
-    # This matters more since 2.4.2: the integration only learns to read the API
-    # token once HA Core is running the new files. If no restart ever happens,
-    # the add-on notices (no token receipt) and simply leaves auth switched off,
-    # so nothing breaks — but the update is incomplete until HA reloads.
-    #
-    # The request itself is bounded: nives-server waits on this oneshot, so a
-    # hung request here would stop the server ever starting.
-    echo "[integration] Restarting HA Core to load updated integration..."
-    if OUT=$(/usr/local/bin/restart-ha-core.sh 2>&1); then
-        rm -f /data/.ha_restart_needed
-        echo "$OUT" | sed 's/^/[integration] /'
+    # wrote — but the add-on does NOT restart it itself. It used to (2.4.2–
+    # 2.4.10), and issue #50 showed how that plays out: an unannounced reboot,
+    # sometimes doubled by the retry logic, that users reasonably read as Home
+    # Assistant crashing. Instead the flag makes the ha-restart service post a
+    # persistent notification once the add-on is up, and the user restarts at
+    # a moment of their choosing. Until then Home Assistant keeps running the
+    # previous integration version, which the server stays compatible with;
+    # the token-receipt auth handshake simply waits for that restart too (no
+    # receipt → auth stays off, nothing breaks).
+    if [ "$FRESH_INSTALL" = "true" ]; then
+        echo "install" > /data/.ha_restart_needed
     else
-        echo "$OUT" | sed 's/^/[integration] /'
-        echo "[integration] Will retry once the add-on has finished starting."
+        echo "update" > /data/.ha_restart_needed
     fi
+    echo "[integration] Home Assistant needs one restart to load the integration —"
+    echo "[integration] a notification will be posted in Home Assistant."
 else
     echo "[integration] Nives integration is up to date"
 fi
