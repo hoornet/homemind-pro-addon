@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.12
+
+- **Security update.** The HTTP library the add-on's server uses for its network requests (undici) is updated to a version that addresses five recently published security advisories, one of them rated high. Preventive housekeeping — nothing changes in how Nives works.
+
 ## 2.4.11
 
 - **Nives no longer restarts Home Assistant on its own.** Until now, the add-on restarted Home Assistant right after installing or updating its companion integration, so the new version would load straight away. That restart could arrive without warning — and because Home Assistant goes down before it can answer the request, the add-on's own log sometimes reported it as refused and asked again, restarting twice in a row. From the outside that looked like Home Assistant crashing (thanks to @pitzoid for the report in #50 — that's exactly what it looked like). From this version, Nives simply leaves a notification in Home Assistant asking you to restart at a moment that suits you. Everything keeps working in the meantime, and the reminder clears itself once the restart happens.
