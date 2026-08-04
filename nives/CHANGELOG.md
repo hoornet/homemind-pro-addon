@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.14
+
+- **OpenAI SDK updated to the new major version (v7).** This is the library the server uses whenever Nives talks to an OpenAI-compatible endpoint — Nives Cloud via OpenRouter, BYOK OpenAI, Ollama, and the optional Whisper/TTS voice services. Verified end-to-end before shipping: full test suite plus a live boot test covering streamed tool calls and fact extraction. No configuration changes needed and nothing changes in how Nives behaves.
+
 ## 2.4.13
 
 - **Dependency housekeeping.** Routine update to the Anthropic SDK the server uses for Claude models (BYOK), plus a security fix in one of the add-on's build-time tools. Nothing changes in how Nives works.
