@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.13
+
+- **Dependency housekeeping.** Routine update to the Anthropic SDK the server uses for Claude models (BYOK), plus a security fix in one of the add-on's build-time tools. Nothing changes in how Nives works.
+
 ## 2.4.12
 
 - **Security update.** The HTTP library the add-on's server uses for its network requests (undici) is updated to a version that addresses five recently published security advisories, one of them rated high. Preventive housekeeping — nothing changes in how Nives works.
