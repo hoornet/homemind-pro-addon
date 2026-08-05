@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.15
+
+- **Nives can no longer learn its author's name as yours.** The internal instructions Nives uses when deciding what's worth remembering contain a couple of example facts, and those examples used a real name — the developer's, as it happens. Most models read them purely as formatting samples, but a small local model can occasionally copy an example straight into your real memory, leaving you with an assistant quietly convinced your name is Jure (thanks @pitzoid for the wonderfully strange find in #54). The examples now use neutral placeholder names. If a stray "Jure"/"Hoornet" fact already made it into your memory, #54 has the steps to remove it.
+
 ## 2.4.14
 
 - **OpenAI SDK updated to the new major version (v7).** This is the library the server uses whenever Nives talks to an OpenAI-compatible endpoint — Nives Cloud via OpenRouter, BYOK OpenAI, Ollama, and the optional Whisper/TTS voice services. Verified end-to-end before shipping: full test suite plus a live boot test covering streamed tool calls and fact extraction. No configuration changes needed and nothing changes in how Nives behaves.
