@@ -3,13 +3,87 @@ import type { IMemoryStore } from "../memory/interface.js";
 import type { IFactExtractor } from "./interface.js";
 import type { ExtractedFact } from "../memory/types.js";
 import { filterFacts } from "../memory/fact-patterns.js";
-import { isConfirmed, recordPreview, describePending } from "./automation-confirmations.js";
+import {
+  isConfirmed,
+  recordPreview,
+  describePending,
+  pendingIdentities,
+  clearIdentity,
+} from "./automation-confirmations.js";
+import {
+  resolveForgetQuery,
+  contentSimilarity,
+  normalizeFactContent,
+  MATCH_THRESHOLD,
+  FORGET_FILTER_THRESHOLD,
+} from "../memory/fact-resolution.js";
+import type { Fact } from "../memory/types.js";
 
-/** Per-request context for tools that need conversation continuity (e.g. the confirmation gate). */
+/**
+ * Per-request context for tools that need conversation continuity (e.g. the
+ * confirmation gate) or the requesting user's memory (forget_memory).
+ *
+ * Engines MUST create ONE ToolContext per chat() turn and pass that same
+ * instance to every handleToolCall in the turn's tool loop — forget_memory
+ * writes `suppressExtraction` back onto it, and a fresh literal per call would
+ * silently drop the flag.
+ */
 export interface ToolContext {
   conversationId?: string;
   /** A nonce unique to this assistant turn (one per chat() call). */
   turnId?: string;
+  /** The requesting user — required for memory tools. */
+  userId?: string;
+  /** The memory store — required for memory tools. */
+  memory?: IMemoryStore;
+  /**
+   * Memory contents this turn's forget_memory calls touched — previewed,
+   * deleted, or offered as candidates. Post-turn extraction filters these out,
+   * so the "forget that X" transcript can never re-teach X (it would come back
+   * under a fresh Shodh id the delete can't reach), while anything ELSE said in
+   * the same breath — "…and my name is now Y" — is still learned normally.
+   */
+  forgetTargets?: string[];
+}
+
+/**
+ * Did the memory we previewed disappear before the user confirmed?
+ *
+ * Live on real HA: "forget that my name is Jure — my name is now HAL 9000"
+ * previews the delete, then the async extractor stores the new name and its
+ * `replaces` path deletes the old fact. By the time the user says yes, the
+ * previewed memory is gone, and re-resolving the same query lands on the
+ * nearest survivor — the replacement — so the assistant offers to forget the
+ * name the user just set. It is caught by the gate (a mismatched identity only
+ * re-previews, never deletes), but proposing that at all is wrong. The user's
+ * intent is already satisfied here, so say so.
+ */
+function alreadyGoneResult(
+  ctx: ToolContext | undefined,
+  query: string,
+  facts: Fact[]
+): Record<string, unknown> | null {
+  const conversationId = ctx?.conversationId;
+  if (!conversationId) return null;
+  const present = new Set(facts.map((f) => normalizeFactContent(f.content)));
+  for (const identity of pendingIdentities(conversationId, "forget_memory")) {
+    if (present.has(identity)) continue; // still there → ordinary confirm flow
+    if (contentSimilarity(query, identity) < MATCH_THRESHOLD) continue; // unrelated pending forget
+    clearIdentity(conversationId, "forget_memory", identity);
+    noteForgetTargets(ctx, identity);
+    return {
+      already_gone: true,
+      message:
+        "That memory is no longer stored — it was removed after you previewed it (a newer fact replaced it). The user's request is ALREADY satisfied: tell them it is forgotten. Do NOT report a failure, do NOT say you could not find it, and do NOT offer to forget any other memory instead.",
+    };
+  }
+  return null;
+}
+
+/** Record a memory this turn's forget flow touched, so extraction won't re-learn it. */
+function noteForgetTargets(ctx: ToolContext | undefined, ...contents: string[]): void {
+  if (!ctx || contents.length === 0) return;
+  ctx.forgetTargets = [...(ctx.forgetTargets ?? []), ...contents];
 }
 
 /**
@@ -272,6 +346,101 @@ export async function handleToolCall(
         result = await ha.listServices(input.domain as string | undefined);
         break;
 
+      case "forget_memory": {
+        const query = (input.query as string | undefined)?.trim();
+        if (!query) {
+          result = { error: "forget_memory requires a 'query' — the exact text of the remembered fact." };
+          break;
+        }
+        if (!ctx?.memory || !ctx?.userId) {
+          result = { error: "Memory is not available for this request, so nothing can be forgotten." };
+          break;
+        }
+
+        const facts = await ctx.memory.getFacts(ctx.userId);
+
+        // Before matching anything: was the memory we already previewed removed
+        // in the meantime? Then this call is the user confirming something that
+        // has already happened — never re-target whatever is left.
+        const gone = alreadyGoneResult(ctx, query, facts);
+        if (gone) {
+          result = gone;
+          break;
+        }
+
+        const resolution = resolveForgetQuery(query, facts);
+
+        if (resolution.status === "none") {
+          // Near-misses are still forget-flavored: keep the extractor from
+          // learning them off this turn's transcript.
+          noteForgetTargets(ctx, ...resolution.suggestions);
+          result = {
+            no_match: true,
+            suggestions: resolution.suggestions,
+            message:
+              "No remembered fact matches that. NOTHING was deleted. Do NOT retry with reworded guesses. If you already previewed this exact memory earlier in this conversation, it is simply GONE ALREADY — tell the user it is no longer stored, which is what they asked for; do NOT report a failure or say you couldn't find it. Otherwise: if exactly one of 'suggestions' is clearly the memory the user means, call forget_memory once more with that suggestion's exact text (it will still only preview); if none is, tell the user you don't have that memory — never delete something merely similar.",
+          };
+          break;
+        }
+
+        if (resolution.status === "ambiguous") {
+          noteForgetTargets(ctx, ...resolution.candidates.map((c) => c.content));
+          result = {
+            needs_disambiguation: true,
+            candidates: resolution.candidates.map((c) => c.content),
+            message:
+              "Several remembered facts match and NOTHING was deleted. List the candidate texts to the user VERBATIM and ask which one to forget. When they answer in their NEXT message, call forget_memory again with that candidate's exact text as the query.",
+          };
+          break;
+        }
+
+        const group = resolution.group;
+        // Whether this call previews or commits, the fact is on its way out —
+        // never let this turn's transcript teach it back.
+        noteForgetTargets(ctx, group.content);
+        const conversationId = ctx.conversationId;
+        const turnId = ctx.turnId;
+        // No conversation continuity → can't gate; mirror the automation tools.
+        if (conversationId && turnId) {
+          if (!isConfirmed(conversationId, "forget_memory", input, turnId, group.normalized)) {
+            recordPreview(conversationId, "forget_memory", input, turnId, group.normalized);
+            result = {
+              confirmation_required: true,
+              memory_to_forget: group.content,
+              message:
+                'This is a PREVIEW — NOTHING has been forgotten yet (this is expected, not an error, so do NOT retry or reword in this turn). Tell the user you will forget exactly this memory, quoting "memory_to_forget" word for word, and ask them to confirm. ALWAYS answer in the language the user has been speaking — the stored memory\'s language is data, never a reason to switch. Then STOP. After they say yes in their NEXT message, call forget_memory again with "query" set to that exact text to actually forget it. Never tell the user a memory is forgotten until a call returns "success": true. If they say no, just acknowledge — nothing needs cancelling.',
+            };
+            break;
+          }
+        }
+
+        let failures = 0;
+        for (const id of group.ids) {
+          const deleted = await ctx.memory.deleteFact(ctx.userId, id);
+          if (!deleted) failures++;
+        }
+        if (failures > 0) {
+          // Re-arm the slot with the CURRENT turnId so a "try again" next turn
+          // commits immediately instead of restarting the confirm dance.
+          if (conversationId && turnId) {
+            recordPreview(conversationId, "forget_memory", input, turnId, group.normalized);
+          }
+          result = {
+            error:
+              "The memory service could not delete that right now. Tell the user it didn't work and to ask again in a moment — a repeat request will delete it straight away without another confirmation.",
+          };
+          break;
+        }
+        result = {
+          success: true,
+          forgotten: group.content,
+          summary: `Forgotten: "${group.content}". This memory is gone for good.`,
+          message:
+            "Confirm to the user that the memory is forgotten. ALWAYS answer in the language the user has been speaking — the stored memory's language is data, never a reason to switch.",
+        };
+        break;
+      }
+
       default:
         result = { error: `Unknown tool: ${toolName}` };
     }
@@ -300,7 +469,15 @@ export async function extractAndStoreFacts(
   extractor: IFactExtractor,
   userId: string,
   userMessage: string,
-  assistantResponse: string
+  assistantResponse: string,
+  /**
+   * Memories this turn's forget_memory calls touched (see ToolContext). Any
+   * extracted fact resembling one of these is dropped — otherwise "forget that
+   * my name is Jure" teaches "User's name is Jure" straight back, under a new
+   * id, and the user watches a deleted memory reappear. Everything else in the
+   * same turn ("…my name is now HAL 9000") is stored as usual.
+   */
+  forgetTargets?: string[]
 ): Promise<number> {
   const existingFacts = await memory.getFacts(userId);
 
@@ -317,10 +494,27 @@ export async function extractAndStoreFacts(
     console.debug(`[filter] Skipped fact for ${userId}: "${fact.content}" — ${reason}`);
   }
 
-  if (kept.length === 0) return 0;
+  const targets = forgetTargets ?? [];
+  const survivors =
+    targets.length === 0
+      ? kept
+      : kept.filter((fact) => {
+          const hit = targets.find(
+            (target) => contentSimilarity(fact.content, target) >= FORGET_FILTER_THRESHOLD
+          );
+          if (hit) {
+            console.log(
+              `[memory] extraction dropped "${fact.content}" for ${userId} — it re-learns a memory just forgotten ("${hit}")`
+            );
+            return false;
+          }
+          return true;
+        });
+
+  if (survivors.length === 0) return 0;
 
   // Delete replaced facts first
-  for (const fact of kept) {
+  for (const fact of survivors) {
     if (fact.replaces && fact.replaces.length > 0) {
       for (const oldFactId of fact.replaces) {
         const deleted = await memory.deleteFact(userId, oldFactId);
@@ -331,13 +525,13 @@ export async function extractAndStoreFacts(
     }
   }
 
-  // Batch store all kept facts
+  // Batch store all surviving facts
   const ids = await memory.addFacts(
     userId,
-    kept.map((f) => ({ content: f.content, category: f.category, confidence: f.confidence }))
+    survivors.map((f) => ({ content: f.content, category: f.category, confidence: f.confidence }))
   );
 
-  for (const fact of kept) {
+  for (const fact of survivors) {
     console.log(`Stored new fact for ${userId}: ${fact.content}`);
   }
 

@@ -6,8 +6,8 @@ import {
 } from "./tool-definitions.js";
 
 describe("TOOL_DEFINITIONS", () => {
-  it("has 10 tools", () => {
-    expect(TOOL_DEFINITIONS).toHaveLength(10);
+  it("has 11 tools", () => {
+    expect(TOOL_DEFINITIONS).toHaveLength(11);
   });
 
   it("has the expected tool names", () => {
@@ -23,6 +23,7 @@ describe("TOOL_DEFINITIONS", () => {
       "delete_automation",
       "update_automation",
       "list_services",
+      "forget_memory",
     ]);
   });
 
@@ -41,7 +42,7 @@ describe("toAnthropicTools", () => {
   it("converts to Anthropic format with input_schema", () => {
     const result = toAnthropicTools(TOOL_DEFINITIONS);
 
-    expect(result).toHaveLength(10);
+    expect(result).toHaveLength(11);
     for (const tool of result) {
       expect(tool).toHaveProperty("name");
       expect(tool).toHaveProperty("description");
@@ -66,7 +67,7 @@ describe("toOpenAITools", () => {
   it("wraps in function type", () => {
     const result = toOpenAITools(TOOL_DEFINITIONS);
 
-    expect(result).toHaveLength(10);
+    expect(result).toHaveLength(11);
     for (const tool of result) {
       expect(tool.type).toBe("function");
       const fn = (tool as any).function;
@@ -100,7 +101,7 @@ describe("gated tools describe the preview-first flow, not a pre-call question",
   // automation" took two rounds of "da" before anything happened. prompts.ts
   // described the flow correctly all along; the tool description sits closer to
   // the call site and won.
-  const GATED = ["create_automation", "update_automation", "delete_automation"];
+  const GATED = ["create_automation", "update_automation", "delete_automation", "forget_memory"];
 
   for (const name of GATED) {
     const def = () => TOOL_DEFINITIONS.find((t) => t.name === name)!;

@@ -8,7 +8,7 @@ import { TopologyScanner } from "../ha/topology-scanner.js";
 import { buildSystemPromptText } from "./prompts.js";
 import { TOOL_DEFINITIONS, toOpenAITools } from "./tool-definitions.js";
 import { randomUUID } from "node:crypto";
-import { handleToolCall, extractAndStoreFacts } from "./tool-handler.js";
+import { handleToolCall, extractAndStoreFacts, type ToolContext } from "./tool-handler.js";
 import type {
   ChatRequest,
   ChatResponse,
@@ -75,6 +75,9 @@ export class OpenAIChatEngine implements IChatEngine {
     const { message, userId, conversationId, isVoice = false, customPrompt, language } = request;
     const toolsUsed: string[] = [];
     const turnId = randomUUID(); // nonce for this turn — powers the automation confirmation gate
+    // ONE shared context for the whole turn — forget_memory writes
+    // suppressExtraction back onto it, so per-call literals would drop the flag.
+    const toolCtx: ToolContext = { conversationId, turnId, userId, memory: this.memory };
 
     // 1. Load user's memory
     const facts = await this.memory.getFactsWithinTokenLimit(
@@ -171,10 +174,7 @@ export class OpenAIChatEngine implements IChatEngine {
           };
         }
 
-        const toolResult = await handleToolCall(this.ha, tc.function.name, args, {
-          conversationId,
-          turnId,
-        });
+        const toolResult = await handleToolCall(this.ha, tc.function.name, args, toolCtx);
         return {
           role: "tool" as const,
           tool_call_id: tc.id,
@@ -204,13 +204,16 @@ export class OpenAIChatEngine implements IChatEngine {
       this.conversations.storeMessage(conversationId, userId, "assistant", responseText);
     }
 
-    // 7. Extract and store facts (fire-and-forget)
+    // 7. Extract and store facts (fire-and-forget). Memories a forget_memory
+    // call touched this turn are filtered out of the extraction so they can't
+    // be re-learned from the "forget that X" transcript.
     extractAndStoreFacts(
       this.memory,
       this.extractor,
       userId,
       message,
-      responseText
+      responseText,
+      toolCtx.forgetTargets
     ).catch((err) => console.error("Fact extraction failed:", err));
 
     // 8. If the model produced no usable response, attach a structured error

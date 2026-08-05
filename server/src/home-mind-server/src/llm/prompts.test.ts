@@ -111,3 +111,32 @@ describe("interface-language tie-breaker line", () => {
     expect(buildSystemPromptText([])).not.toContain("Interface language");
   });
 });
+
+describe("FORGETTING MEMORIES section", () => {
+  it("is present in the regular prompt with the confirm-first flow", () => {
+    const text = buildSystemPromptText(["User's name is Alex"]);
+    expect(text).toContain("## FORGETTING MEMORIES (CONFIRM FIRST)");
+    expect(text).toContain("forget_memory");
+    expect(text).toMatch(/never paraphrased and never translated|never paraphrase or translate/);
+    // The reminder trap must be named explicitly.
+    expect(text).toMatch(/Don't forget to X|DON'T forget X/);
+  });
+
+  it("is present in the voice prompt", () => {
+    const text = buildSystemPromptText([], true);
+    expect(text).toContain("## FORGETTING MEMORIES (CONFIRM FIRST)");
+    expect(text).toContain("forget_memory");
+  });
+
+  it("is present in both Anthropic prompt variants", () => {
+    const regular = buildSystemPrompt([]) as { text: string }[];
+    const voice = buildSystemPrompt([], true) as { text: string }[];
+    expect(regular.map((b) => b.text).join("\n")).toContain("## FORGETTING MEMORIES (CONFIRM FIRST)");
+    expect(voice.map((b) => b.text).join("\n")).toContain("## FORGETTING MEMORIES (CONFIRM FIRST)");
+  });
+
+  it("lists forgetting in the capabilities section", () => {
+    const text = buildSystemPromptText([]);
+    expect(text).toContain("Forget a remembered fact when asked");
+  });
+});

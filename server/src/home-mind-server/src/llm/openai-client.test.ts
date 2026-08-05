@@ -419,7 +419,8 @@ describe("OpenAIChatEngine", () => {
       extractor,
       "user-1",
       "Remember I like 22°C",
-      "Response"
+      "Response",
+      undefined // no forget_memory in this turn → nothing to filter out
     );
   });
 
@@ -552,6 +553,113 @@ describe("OpenAIChatEngine", () => {
 
       expect(result.response).toBe("Done");
       expect(result.error).toBeUndefined();
+    });
+  });
+
+  describe("shared tool context & extraction suppression", () => {
+    const toolCallTurn = (name: string, args: string) =>
+      makeStream([
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [{ index: 0, id: "call-1", function: { name, arguments: args } }],
+              },
+              finish_reason: null,
+            },
+          ],
+        },
+        { choices: [{ delta: {}, finish_reason: "tool_calls" }] },
+      ]);
+
+    it("passes forgetTargets from the turn's tool calls into extraction", async () => {
+      // Extraction still RUNS on a forget turn (so "…my name is now Y" is
+      // learned); the touched memory is handed over to be filtered out.
+      vi.mocked(handleToolCall).mockImplementation(
+        async (_ha, _name, _input, ctx?: { forgetTargets?: string[] }) => {
+          if (ctx) ctx.forgetTargets = ["User's name is X"];
+          return { confirmation_required: true };
+        }
+      );
+      mockCreate.mockResolvedValueOnce(toolCallTurn("forget_memory", '{"query":"my name is X"}'));
+      mockCreate.mockResolvedValueOnce(
+        makeStream([
+          { choices: [{ delta: { content: "Shall I forget it?" }, finish_reason: null }] },
+          { choices: [{ delta: {}, finish_reason: "stop" }] },
+        ])
+      );
+
+      await engine.chat({ message: "forget that my name is X", userId: "user-1" });
+
+      expect(handleToolCall).toHaveBeenCalledTimes(1);
+      expect(extractAndStoreFacts).toHaveBeenCalledWith(
+        memory,
+        extractor,
+        "user-1",
+        "forget that my name is X",
+        "Shall I forget it?",
+        ["User's name is X"]
+      );
+    });
+
+    it("passes undefined forgetTargets on an ordinary turn", async () => {
+      mockCreate.mockResolvedValue(
+        makeStream([
+          { choices: [{ delta: { content: "Hi" }, finish_reason: null }] },
+          { choices: [{ delta: {}, finish_reason: "stop" }] },
+        ])
+      );
+
+      await engine.chat({ message: "Hello", userId: "user-1" });
+
+      expect(extractAndStoreFacts).toHaveBeenCalledWith(
+        memory, extractor, "user-1", "Hello", "Hi", undefined
+      );
+    });
+
+    it("passes the SAME context object to every tool call in a turn", async () => {
+      mockCreate.mockResolvedValueOnce(
+        makeStream([
+          {
+            choices: [
+              {
+                delta: {
+                  tool_calls: [
+                    { index: 0, id: "call-1", function: { name: "get_state", arguments: '{"entity_id":"a.b"}' } },
+                  ],
+                },
+                finish_reason: null,
+              },
+            ],
+          },
+          {
+            choices: [
+              {
+                delta: {
+                  tool_calls: [
+                    { index: 1, id: "call-2", function: { name: "get_state", arguments: '{"entity_id":"c.d"}' } },
+                  ],
+                },
+                finish_reason: null,
+              },
+            ],
+          },
+          { choices: [{ delta: {}, finish_reason: "tool_calls" }] },
+        ])
+      );
+      mockCreate.mockResolvedValueOnce(
+        makeStream([
+          { choices: [{ delta: { content: "done" }, finish_reason: null }] },
+          { choices: [{ delta: {}, finish_reason: "stop" }] },
+        ])
+      );
+
+      await engine.chat({ message: "check both", userId: "user-1", conversationId: "conv-1" });
+
+      const calls = vi.mocked(handleToolCall).mock.calls;
+      expect(calls).toHaveLength(2);
+      expect(calls[0][3]).toBe(calls[1][3]);
+      expect(calls[0][3]).toMatchObject({ userId: "user-1", conversationId: "conv-1", memory });
     });
   });
 });

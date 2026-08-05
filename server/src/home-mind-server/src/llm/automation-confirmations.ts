@@ -53,9 +53,11 @@ const pending = new Map<string, PendingPreview>();
 function slotKey(
   conversationId: string,
   toolName: string,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  identityOverride?: string
 ): string {
-  return `${conversationId}\u0000${toolName}\u0000${identityKey(toolName, input)}`;
+  const identity = identityOverride ?? identityKey(toolName, input);
+  return `${conversationId}\u0000${toolName}\u0000${identity}`;
 }
 
 function pruneExpired(now: number): void {
@@ -96,6 +98,11 @@ function identityKey(toolName: string, input: Record<string, unknown>): string {
   if (toolName === "create_automation") {
     return normalizeAlias(input.alias);
   }
+  // Unknown tools collapse to one slot per conversation — the create-side loop
+  // bug all over again. A tool whose identity can't be derived from its input
+  // (e.g. forget_memory, whose stable identity is the RESOLVED fact content,
+  // not the raw query the model rewords between turns) must pass
+  // identityOverride to isConfirmed/recordPreview instead of relying on this.
   return "";
 }
 
@@ -108,9 +115,10 @@ export function isConfirmed(
   conversationId: string,
   toolName: string,
   input: Record<string, unknown>,
-  turnId: string
+  turnId: string,
+  identityOverride?: string
 ): boolean {
-  const key = slotKey(conversationId, toolName, input);
+  const key = slotKey(conversationId, toolName, input, identityOverride);
   const entry = pending.get(key);
   if (!entry) return false;
   if (Date.now() - entry.createdAt > TTL_MS) {
@@ -130,15 +138,46 @@ export function recordPreview(
   conversationId: string,
   toolName: string,
   input: Record<string, unknown>,
-  turnId: string
+  turnId: string,
+  identityOverride?: string
 ): void {
   const now = Date.now();
   pruneExpired(now);
-  pending.set(slotKey(conversationId, toolName, input), {
+  pending.set(slotKey(conversationId, toolName, input, identityOverride), {
     conversationId,
     turnId,
     createdAt: now,
   });
+}
+
+/**
+ * Identities with a live preview for this conversation + tool.
+ *
+ * forget_memory uses this to notice that the memory it previewed has since
+ * disappeared — the fact extractor's own replace-on-update path can delete it
+ * between the preview and the user's "yes". Without this the confirm call
+ * re-resolves the query against what's left and lands on the REPLACEMENT
+ * ("User's name is Jure" → "User's name is HAL 9000" scores 0.73), so the
+ * assistant offers to forget the name the user just set.
+ */
+export function pendingIdentities(conversationId: string, toolName: string): string[] {
+  const now = Date.now();
+  const prefix = slotKey(conversationId, toolName, {}, "");
+  const found: string[] = [];
+  for (const [key, entry] of pending) {
+    if (!key.startsWith(prefix)) continue;
+    if (now - entry.createdAt > TTL_MS) {
+      pending.delete(key);
+      continue;
+    }
+    found.push(key.slice(prefix.length));
+  }
+  return found;
+}
+
+/** Drop one specific pending preview (e.g. what it referred to is already gone). */
+export function clearIdentity(conversationId: string, toolName: string, identity: string): void {
+  pending.delete(slotKey(conversationId, toolName, {}, identity));
 }
 
 /** Drop ALL of a conversation's pending previews (e.g. the user changed their mind). */

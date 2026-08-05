@@ -8,7 +8,7 @@ import { TopologyScanner } from "../ha/topology-scanner.js";
 import { buildSystemPrompt, type CachedSystemPrompt } from "./prompts.js";
 import { HA_TOOLS } from "./tools.js";
 import { randomUUID } from "node:crypto";
-import { handleToolCall, extractAndStoreFacts } from "./tool-handler.js";
+import { handleToolCall, extractAndStoreFacts, type ToolContext } from "./tool-handler.js";
 import type {
   ChatRequest,
   ChatResponse,
@@ -66,6 +66,9 @@ export class LLMClient implements IChatEngine {
     const { message, userId, conversationId, isVoice = false, customPrompt, language } = request;
     const toolsUsed: string[] = [];
     const turnId = randomUUID(); // nonce for this turn — powers the automation confirmation gate
+    // ONE shared context for the whole turn — forget_memory writes
+    // suppressExtraction back onto it, so per-call literals would drop the flag.
+    const toolCtx: ToolContext = { conversationId, turnId, userId, memory: this.memory };
 
     // 1. Load user's memory (pass current message as context for Shodh's proactive retrieval)
     const facts = await this.memory.getFactsWithinTokenLimit(
@@ -156,7 +159,7 @@ export class LLMClient implements IChatEngine {
           this.ha,
           block.name,
           block.input as Record<string, unknown>,
-          { conversationId, turnId }
+          toolCtx
         );
         return {
           type: "tool_result" as const,
@@ -197,13 +200,16 @@ export class LLMClient implements IChatEngine {
       this.conversations.storeMessage(conversationId, userId, "assistant", responseText);
     }
 
-    // 7. Extract and store new facts (async, don't block response)
+    // 7. Extract and store new facts (async, don't block response). Memories a
+    // forget_memory call touched this turn are filtered out of the extraction
+    // so they can't be re-learned from the "forget that X" transcript.
     extractAndStoreFacts(
       this.memory,
       this.extractor,
       userId,
       message,
-      responseText
+      responseText,
+      toolCtx.forgetTargets
     ).catch((err) => console.error("Fact extraction failed:", err));
 
     // Count facts learned (we don't wait for extraction, so return 0 for now)

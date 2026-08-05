@@ -1,6 +1,10 @@
 # Changelog
 
-## 2.4.15
+## 2.4.16
+
+- **You can now simply ask Nives to forget something.** Say "forget that my name is Alex", "delete the memory that I prefer 21 degrees", or "that's not true anymore", and Nives quotes the exact memory back to you and waits for your yes before anything is removed — the same confirm-first flow it already uses for automations. Nothing is ever deleted on the first ask, and if several memories could match, Nives lists them and asks which one you mean rather than guessing. Until now memories could only be removed outside the conversation, so "forget that…" had nowhere to go (thanks @pitzoid for raising it in #54).
+- **Replacing something works in one breath.** "Forget that my name is Alex — my name is now HAL 9000" removes the old memory and remembers the new one, without the old one quietly finding its way back from the same conversation.
+- **It only ever forgets what you name.** Nives won't sweep through your memories, and "don't forget to water the plants" is still a reminder, not a deletion. If it can't find what you're describing, it says so instead of removing something that merely looks similar.
 
 - **Nives can no longer learn its author's name as yours.** The internal instructions Nives uses when deciding what's worth remembering contain a couple of example facts, and those examples used a real name — the developer's, as it happens. Most models read them purely as formatting samples, but a small local model can occasionally copy an example straight into your real memory, leaving you with an assistant quietly convinced your name is Jure (thanks @pitzoid for the wonderfully strange find in #54). The examples now use neutral placeholder names. If a stray "Jure"/"Hoornet" fact already made it into your memory, #54 has the steps to remove it.
 

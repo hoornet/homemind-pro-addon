@@ -314,3 +314,60 @@ describe("mixed-trigger note and untouched-fields enumeration (2026-07-27 live g
     expect((preview.notes as string[]).some((n) => /changes ONLY/.test(n))).toBe(false);
   });
 });
+
+describe("identityOverride (content-identity gating for forget_memory)", () => {
+  const conv = "conv-forget";
+  const other = "conv-other";
+
+  beforeEach(() => {
+    clearConfirmation(conv);
+    clearConfirmation(other);
+  });
+
+  it("confirms in a later turn when the same override was previewed", () => {
+    recordPreview(conv, "forget_memory", { query: "my name is jure" }, "turn-1", "user s name is jure");
+    // Confirm call has a REWORDED query — only the override identity matters.
+    expect(
+      isConfirmed(conv, "forget_memory", { query: "User's name is Jure" }, "turn-2", "user s name is jure")
+    ).toBe(true);
+  });
+
+  it("does NOT confirm with a different override identity", () => {
+    recordPreview(conv, "forget_memory", { query: "a" }, "turn-1", "user s name is jure");
+    expect(isConfirmed(conv, "forget_memory", { query: "a" }, "turn-2", "user prefers 21 c")).toBe(false);
+  });
+
+  it("keeps two overridden previews in DISTINCT slots (the empty-identity collapse regression)", () => {
+    // Without an override, unknown tools all key to identity "" — two pending
+    // forgets would overwrite each other and re-preview forever (the create-side
+    // infinite-loop bug). With overrides, both must be independently confirmable.
+    recordPreview(conv, "forget_memory", { query: "a" }, "turn-1", "fact one");
+    recordPreview(conv, "forget_memory", { query: "b" }, "turn-1", "fact two");
+    expect(isConfirmed(conv, "forget_memory", { query: "a" }, "turn-2", "fact one")).toBe(true);
+    expect(isConfirmed(conv, "forget_memory", { query: "b" }, "turn-2", "fact two")).toBe(true);
+  });
+
+  it("does not cross-confirm with automation slots in the same conversation", () => {
+    recordPreview(conv, "create_automation", { alias: "X", trigger: {}, action: {} }, "turn-1");
+    recordPreview(conv, "forget_memory", { query: "q" }, "turn-1", "fact one");
+    // Confirming the forget consumes only the forget slot…
+    expect(isConfirmed(conv, "forget_memory", { query: "q" }, "turn-2", "fact one")).toBe(true);
+    // …and the automation slot is still there and confirmable.
+    expect(isConfirmed(conv, "create_automation", { alias: "X" }, "turn-2")).toBe(true);
+  });
+
+  it("same override in a DIFFERENT conversation does not confirm", () => {
+    recordPreview(conv, "forget_memory", { query: "q" }, "turn-1", "fact one");
+    expect(isConfirmed(other, "forget_memory", { query: "q" }, "turn-2", "fact one")).toBe(false);
+  });
+
+  it("does not confirm in the same turn the preview was recorded", () => {
+    recordPreview(conv, "forget_memory", { query: "q" }, "turn-1", "fact one");
+    expect(isConfirmed(conv, "forget_memory", { query: "q" }, "turn-1", "fact one")).toBe(false);
+  });
+
+  it("omitting the override preserves existing behavior for automation tools", () => {
+    recordPreview(conv, "delete_automation", { entity_id: "automation.x" }, "turn-1");
+    expect(isConfirmed(conv, "delete_automation", { entity_id: "automation.x" }, "turn-2")).toBe(true);
+  });
+});
