@@ -14,8 +14,8 @@ import {
   resolveForgetQuery,
   contentSimilarity,
   normalizeFactContent,
+  looksLikeRelearn,
   MATCH_THRESHOLD,
-  FORGET_FILTER_THRESHOLD,
 } from "../memory/fact-resolution.js";
 import type { Fact } from "../memory/types.js";
 
@@ -499,9 +499,7 @@ export async function extractAndStoreFacts(
     targets.length === 0
       ? kept
       : kept.filter((fact) => {
-          const hit = targets.find(
-            (target) => contentSimilarity(fact.content, target) >= FORGET_FILTER_THRESHOLD
-          );
+          const hit = targets.find((target) => looksLikeRelearn(fact.content, target));
           if (hit) {
             console.log(
               `[memory] extraction dropped "${fact.content}" for ${userId} — it re-learns a memory just forgotten ("${hit}")`

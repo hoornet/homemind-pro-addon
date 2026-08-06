@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.18
+
+- **Swapping a memory for a new version now keeps the new one.** You can say "forget that my canary word is bumblebee — it's now honeybee" in a single breath, and Nives forgets the old memory and remembers the new one. When the two versions differed by only a single word, the new one could look so much like the memory just forgotten that Nives set it aside to avoid re-learning what you'd asked it to drop — so the old fact went and the new one wasn't kept. It now looks at which words actually changed rather than how alike the two sentences are, so a swapped value is saved while a genuine repeat of the forgotten memory is still ignored.
+
 ## 2.4.17
 
 - **Nives now knows its own name — and hands it over properly when you rename it.** Ask "what's your name?" and you'd always get "Nives", but that answer was really an educated guess: the name didn't actually appear anywhere in Nives's own instructions, so it was inferring it from the label it puts on automations it creates. That worked perfectly until you used the Custom Prompt to give it a different personality — one line of yours was up against a label the model saw several times over, and smaller models kept drifting back. Nives is now told its name outright, and that label is described as what it is, so a Custom Prompt like "You are HAL 9000, the calm and precise computer from 2001" replaces it cleanly and stays replaced. Checked on a small local model as well as the Cloud one. (Thanks @pitzoid for sticking with this in #54.)

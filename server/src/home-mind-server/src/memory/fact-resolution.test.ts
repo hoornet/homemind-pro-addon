@@ -6,6 +6,7 @@ import {
   SUGGESTION_THRESHOLD,
   FORGET_FILTER_THRESHOLD,
   contentSimilarity,
+  looksLikeRelearn,
 } from "./fact-resolution.js";
 import type { Fact } from "./types.js";
 
@@ -177,5 +178,41 @@ describe("contentSimilarity (extraction filter)", () => {
   it("is symmetric and safe on empty input", () => {
     expect(contentSimilarity("a b c", "c b a")).toBe(contentSimilarity("c b a", "a b c"));
     expect(contentSimilarity("", "User's name is Jure")).toBe(0);
+  });
+});
+
+describe("looksLikeRelearn (what the extraction filter actually asks)", () => {
+  const CANARY = 'User\'s test canary word is "bumblebee"';
+
+  it("does NOT flag a one-word value swap — the live 2.4.16 regression", () => {
+    // Shipped bug: this scores 0.857, over the 0.85 threshold, so the user's
+    // brand new canary word was dropped and the replacement silently lost.
+    expect(looksLikeRelearn('User\'s test canary word is "honeybee"', CANARY)).toBe(false);
+  });
+
+  it("flags a reworded restatement that scores IDENTICALLY (0.857)", () => {
+    // Same similarity as the case above — which is why similarity alone can
+    // never separate them, and why the token-change rule exists.
+    expect(looksLikeRelearn("The user's canary word is bumblebee", CANARY)).toBe(true);
+  });
+
+  it("flags a verbatim re-learn", () => {
+    expect(looksLikeRelearn(CANARY, CANARY)).toBe(true);
+  });
+
+  it("does NOT flag a multi-token replacement (the name case)", () => {
+    expect(looksLikeRelearn("User's name is HAL 9000", "User's name is Jure")).toBe(false);
+  });
+
+  it("does NOT flag an unrelated fact", () => {
+    expect(looksLikeRelearn("User prefers the bedroom at 20 degrees", CANARY)).toBe(false);
+  });
+
+  it("flags a restatement that only drops a word", () => {
+    expect(looksLikeRelearn("User's canary word is bumblebee", CANARY)).toBe(true);
+  });
+
+  it("flags a restatement that still asserts the forgotten value", () => {
+    expect(looksLikeRelearn('User\'s test canary word is "bumblebee" and "honeybee"', CANARY)).toBe(true);
   });
 });

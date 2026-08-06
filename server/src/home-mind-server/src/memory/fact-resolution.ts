@@ -78,6 +78,34 @@ export function contentSimilarity(a: string, b: string): number {
   return diceScore(tokenSet(normA), tokenSet(normB));
 }
 
+/** Tokens this short carry grammar, not meaning ("the", "is", "my", "a"). */
+const FILLER_MAX_LEN = 3;
+
+/**
+ * Would storing `candidate` re-teach the memory `forgotten` that was just deleted?
+ *
+ * Similarity alone cannot answer this, which cost a live release: "User's test
+ * canary word is honeybee" scores 0.857 against the forgotten "…is bumblebee",
+ * and so does a reworded re-learn like "The user's canary word is bumblebee".
+ * Same score, opposite right answers — so 2.4.16 filtered out the user's brand
+ * new canary word and the replacement was silently lost.
+ *
+ * What actually separates them is WHICH words changed. A replacement drops a
+ * meaningful word and puts another meaningful word in its place (bumblebee →
+ * honeybee). A re-learn restates the same claim: it drops nothing meaningful
+ * and adds at most filler.
+ */
+export function looksLikeRelearn(candidate: string, forgotten: string): boolean {
+  if (contentSimilarity(candidate, forgotten) < FORGET_FILTER_THRESHOLD) return false;
+  const cand = tokenSet(normalizeFactContent(candidate));
+  const gone = tokenSet(normalizeFactContent(forgotten));
+  const meaningful = (t: string) => t.length > FILLER_MAX_LEN;
+  const dropped = [...gone].filter((t) => !cand.has(t) && meaningful(t));
+  const added = [...cand].filter((t) => !gone.has(t) && meaningful(t));
+  if (dropped.length > 0 && added.length > 0) return false; // swapped a value → replacement
+  return true;
+}
+
 /** Dice coefficient over token sets: 2·|A∩B| / (|A|+|B|). */
 function diceScore(a: Set<string>, b: Set<string>): number {
   if (a.size === 0 || b.size === 0) return 0;

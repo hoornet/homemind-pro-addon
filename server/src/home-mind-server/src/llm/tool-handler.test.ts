@@ -1092,3 +1092,31 @@ describe("handleToolCall forget_memory — previewed memory vanishes before conf
     expect(memory.deleteFact).toHaveBeenCalledWith("user-1", "f-old");
   });
 });
+
+describe("extractAndStoreFacts — one-word value swap survives (live 2.4.16 regression)", () => {
+  it("keeps the new canary word while dropping a restatement of the old one", async () => {
+    const memory = {
+      getFacts: vi.fn().mockResolvedValue([]),
+      addFacts: vi.fn().mockResolvedValue(["new-1"]),
+      deleteFact: vi.fn().mockResolvedValue(true),
+    } as unknown as IMemoryStore;
+    const extractor = {
+      extract: vi.fn().mockResolvedValue([
+        { content: 'User\'s test canary word is "honeybee"', category: "preference", confidence: 1 },
+        { content: "The user's canary word is bumblebee", category: "preference", confidence: 1 },
+      ]),
+    } as unknown as IFactExtractor;
+
+    const n = await extractAndStoreFacts(
+      memory, extractor, "user-1",
+      "forget that my test canary word is bumblebee — my canary word is now honeybee",
+      "Forgotten. I'll remember honeybee.",
+      ['User\'s test canary word is "bumblebee"']
+    );
+
+    expect(n).toBe(1);
+    const stored = (memory.addFacts as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(stored).toHaveLength(1);
+    expect(stored[0].content).toContain("honeybee");
+  });
+});
