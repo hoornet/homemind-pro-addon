@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.17
+
+- **Nives now knows its own name — and hands it over properly when you rename it.** Ask "what's your name?" and you'd always get "Nives", but that answer was really an educated guess: the name didn't actually appear anywhere in Nives's own instructions, so it was inferring it from the label it puts on automations it creates. That worked perfectly until you used the Custom Prompt to give it a different personality — one line of yours was up against a label the model saw several times over, and smaller models kept drifting back. Nives is now told its name outright, and that label is described as what it is, so a Custom Prompt like "You are HAL 9000, the calm and precise computer from 2001" replaces it cleanly and stays replaced. Checked on a small local model as well as the Cloud one. (Thanks @pitzoid for sticking with this in #54.)
+
 ## 2.4.16
 
 - **You can now simply ask Nives to forget something.** Say "forget that my name is Alex", "delete the memory that I prefer 21 degrees", or "that's not true anymore", and Nives quotes the exact memory back to you and waits for your yes before anything is removed — the same confirm-first flow it already uses for automations. Nothing is ever deleted on the first ask, and if several memories could match, Nives lists them and asks which one you mean rather than guessing. Until now memories could only be removed outside the conversation, so "forget that…" had nowhere to go (thanks @pitzoid for raising it in #54).

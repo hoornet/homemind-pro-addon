@@ -476,7 +476,7 @@ describe("OpenAIChatEngine", () => {
     const systemMsg = createCall.messages[0];
     expect(systemMsg.role).toBe("system");
     expect(systemMsg.content).toMatch(/^You are Ava, a sarcastic AI\./);
-    expect(systemMsg.content).not.toContain("You are a helpful smart home assistant");
+    expect(systemMsg.content).not.toContain("You are Nives, a helpful smart home assistant");
   });
 
   it("uses default identity when customPrompt absent", async () => {
@@ -491,7 +491,7 @@ describe("OpenAIChatEngine", () => {
 
     const createCall = mockCreate.mock.calls[0][0];
     const systemMsg = createCall.messages[0];
-    expect(systemMsg.content).toContain("You are a helpful smart home assistant");
+    expect(systemMsg.content).toContain("You are Nives, a helpful smart home assistant");
   });
 
   it("returns factsLearned as 0", async () => {
