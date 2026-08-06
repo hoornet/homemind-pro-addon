@@ -99,7 +99,12 @@ export function looksLikeRelearn(candidate: string, forgotten: string): boolean 
   if (contentSimilarity(candidate, forgotten) < FORGET_FILTER_THRESHOLD) return false;
   const cand = tokenSet(normalizeFactContent(candidate));
   const gone = tokenSet(normalizeFactContent(forgotten));
-  const meaningful = (t: string) => t.length > FILLER_MAX_LEN;
+  // Digits are ALWAYS meaningful, however short. Length alone said "21" and
+  // "23" were filler, so "forget that I like the bedroom at 21 at night, make
+  // it 23" deleted the old fact and silently dropped the new one — the same
+  // failure 2.4.18 fixed for word values, still open for the value type this
+  // product stores most: temperatures, times, thresholds, percentages.
+  const meaningful = (t: string) => t.length > FILLER_MAX_LEN || /\d/.test(t);
   const dropped = [...gone].filter((t) => !cand.has(t) && meaningful(t));
   const added = [...cand].filter((t) => !gone.has(t) && meaningful(t));
   if (dropped.length > 0 && added.length > 0) return false; // swapped a value → replacement

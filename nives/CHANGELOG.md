@@ -2,6 +2,8 @@
 
 ## 2.4.18
 
+- **Memories are only ever deleted from a real conversation with you.** Forgetting has always asked you to confirm first, but a request arriving outside a conversation — such as one made by an AI Task, including tasks that look at camera images — had no one to ask, and went ahead. Those requests are now declined outright, so a memory can only be removed after you've been shown it and agreed.
+- **Changing a remembered number now sticks.** "Forget that I like the bedroom at 21 at night — make it 23" removes the old setting and remembers the new one. Values like temperatures, times and thresholds were short enough that the new version looked like the old memory returning, so it wasn't kept.
 - **Swapping a memory for a new version now keeps the new one.** You can say "forget that my canary word is bumblebee — it's now honeybee" in a single breath, and Nives forgets the old memory and remembers the new one. When the two versions differed by only a single word, the new one could look so much like the memory just forgotten that Nives set it aside to avoid re-learning what you'd asked it to drop — so the old fact went and the new one wasn't kept. It now looks at which words actually changed rather than how alike the two sentences are, so a swapped value is saved while a genuine repeat of the forgotten memory is still ignored.
 
 ## 2.4.17

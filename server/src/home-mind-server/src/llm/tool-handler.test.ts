@@ -914,10 +914,33 @@ describe("handleToolCall forget_memory", () => {
     expect(commitCtx.forgetTargets).toContain(CANARY);
   });
 
-  it("deletes directly when there is no conversation continuity (but memory is available)", async () => {
-    const result = (await handleToolCall(ha, "forget_memory", { query: CANARY }, { userId: "user-1", memory })) as { success?: boolean };
-    expect(memory.deleteFact).toHaveBeenCalledWith("user-1", "f-1");
-    expect(result.success).toBe(true);
+  it("REFUSES when there is no conversation continuity — it cannot be confirmed, so it must not delete", async () => {
+    // This asserted the opposite until 2.4.18. The AI Task entity posts with no
+    // conversationId by design (ai_task.py), and gets the full tool set, so the
+    // fall-through meant one generate_data run — including the camera-image
+    // path — could erase a memory on the first call with nobody asked.
+    const result = (await handleToolCall(ha, "forget_memory", { query: CANARY }, { userId: "user-1", memory })) as {
+      error?: string;
+      success?: boolean;
+    };
+    expect(memory.deleteFact).not.toHaveBeenCalled();
+    expect(result.success).toBeUndefined();
+    expect(result.error).toMatch(/conversation/i);
+  });
+
+  it("REFUSES the exact ai_task request shape (userId + customPrompt, no conversationId)", async () => {
+    const aiTaskCtx = { userId: "user-1", memory }; // no conversationId, no turnId
+    const result = (await handleToolCall(ha, "forget_memory", { query: CANARY }, aiTaskCtx)) as { error?: string };
+    expect(result.error).toBeDefined();
+    expect(memory.deleteFact).not.toHaveBeenCalled();
+  });
+
+  it("still refuses when only turnId is missing", async () => {
+    const result = (await handleToolCall(ha, "forget_memory", { query: CANARY }, {
+      conversationId: CONV, userId: "user-1", memory,
+    })) as { error?: string };
+    expect(result.error).toBeDefined();
+    expect(memory.deleteFact).not.toHaveBeenCalled();
   });
 
   it("coexists with a pending automation preview without cross-firing", async () => {

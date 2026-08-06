@@ -216,3 +216,41 @@ describe("looksLikeRelearn (what the extraction filter actually asks)", () => {
     expect(looksLikeRelearn('User\'s test canary word is "bumblebee" and "honeybee"', CANARY)).toBe(true);
   });
 });
+
+describe("looksLikeRelearn — numeric value swaps (2.4.19 review finding)", () => {
+  // Length alone treated "21"/"23" as filler, so a temperature change looked
+  // like the old fact returning and the replacement was dropped. These are the
+  // value shapes Nives stores most: temperatures, times, thresholds, percents.
+  const REPLACEMENTS: [string, string, string][] = [
+    ["temperature", "User prefers the bedroom temperature at night to be 23", "User prefers the bedroom temperature at night to be 21"],
+    ["time of day", "User usually goes to bed at 23 00 on weeknights", "User usually goes to bed at 22 00 on weeknights"],
+    ["threshold", "User considers NOx above 150 ppm high for their home", "User considers NOx above 100 ppm high for their home"],
+    ["percentage", "User likes the living room lights at 40 percent in the evening", "User likes the living room lights at 30 percent in the evening"],
+  ];
+
+  for (const [label, replacement, forgotten] of REPLACEMENTS) {
+    it(`keeps a ${label} replacement`, () => {
+      // Similarity is high enough to be filtered on score alone — that is the point.
+      expect(contentSimilarity(replacement, forgotten)).toBeGreaterThanOrEqual(FORGET_FILTER_THRESHOLD);
+      expect(looksLikeRelearn(replacement, forgotten)).toBe(false);
+    });
+  }
+
+  it("still flags a reworded restatement carrying the SAME number", () => {
+    expect(
+      looksLikeRelearn(
+        "The user prefers the bedroom temperature at night to be 21",
+        "User prefers the bedroom temperature at night to be 21"
+      )
+    ).toBe(true);
+  });
+
+  it("still flags a restatement that merely drops a word", () => {
+    expect(
+      looksLikeRelearn(
+        "User prefers the bedroom temperature to be 21",
+        "User prefers the bedroom temperature at night to be 21"
+      )
+    ).toBe(true);
+  });
+});

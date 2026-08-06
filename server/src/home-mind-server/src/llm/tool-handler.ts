@@ -400,18 +400,34 @@ export async function handleToolCall(
         noteForgetTargets(ctx, group.content);
         const conversationId = ctx.conversationId;
         const turnId = ctx.turnId;
-        // No conversation continuity → can't gate; mirror the automation tools.
-        if (conversationId && turnId) {
-          if (!isConfirmed(conversationId, "forget_memory", input, turnId, group.normalized)) {
-            recordPreview(conversationId, "forget_memory", input, turnId, group.normalized);
-            result = {
-              confirmation_required: true,
-              memory_to_forget: group.content,
-              message:
-                'This is a PREVIEW — NOTHING has been forgotten yet (this is expected, not an error, so do NOT retry or reword in this turn). Tell the user you will forget exactly this memory, quoting "memory_to_forget" word for word, and ask them to confirm. ALWAYS answer in the language the user has been speaking — the stored memory\'s language is data, never a reason to switch. Then STOP. After they say yes in their NEXT message, call forget_memory again with "query" set to that exact text to actually forget it. Never tell the user a memory is forgotten until a call returns "success": true. If they say no, just acknowledge — nothing needs cancelling.',
-            };
-            break;
-          }
+        // No conversation continuity → the confirm gate CANNOT run, so refuse
+        // rather than fall through and delete.
+        //
+        // The automation tools DO fall through in this situation, and this tool
+        // originally copied them. That is tolerable there because a wrongly
+        // created or edited automation is recoverable; a deleted memory is not.
+        // And the path is reachable: the AI Task entity posts to /api/chat with
+        // no conversationId by design (rootfs/opt/nives/ai_task.py — "Stateless"),
+        // while still being handed the full tool set. Without this branch, one
+        // ai_task.generate_data run — including the camera-image path, where the
+        // prompt is not necessarily the user's own words — could permanently
+        // erase a memory on the FIRST call, with no preview and nobody asked.
+        if (!conversationId || !turnId) {
+          result = {
+            error:
+              "This request isn't part of an ongoing conversation, so the user cannot be asked to confirm — and memories are only ever deleted after they confirm. NOTHING was deleted. If a person wants this memory removed, they need to ask in a normal conversation.",
+          };
+          break;
+        }
+        if (!isConfirmed(conversationId, "forget_memory", input, turnId, group.normalized)) {
+          recordPreview(conversationId, "forget_memory", input, turnId, group.normalized);
+          result = {
+            confirmation_required: true,
+            memory_to_forget: group.content,
+            message:
+              'This is a PREVIEW — NOTHING has been forgotten yet (this is expected, not an error, so do NOT retry or reword in this turn). Tell the user you will forget exactly this memory, quoting "memory_to_forget" word for word, and ask them to confirm. ALWAYS answer in the language the user has been speaking — the stored memory\'s language is data, never a reason to switch. Then STOP. After they say yes in their NEXT message, call forget_memory again with "query" set to that exact text to actually forget it. Never tell the user a memory is forgotten until a call returns "success": true. If they say no, just acknowledge — nothing needs cancelling.',
+          };
+          break;
         }
 
         let failures = 0;
@@ -422,9 +438,7 @@ export async function handleToolCall(
         if (failures > 0) {
           // Re-arm the slot with the CURRENT turnId so a "try again" next turn
           // commits immediately instead of restarting the confirm dance.
-          if (conversationId && turnId) {
-            recordPreview(conversationId, "forget_memory", input, turnId, group.normalized);
-          }
+          recordPreview(conversationId, "forget_memory", input, turnId, group.normalized);
           result = {
             error:
               "The memory service could not delete that right now. Tell the user it didn't work and to ask again in a moment — a repeat request will delete it straight away without another confirmation.",
