@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.19
+
+- **Ask Nives to change its name, and it now tells you where to do it.** Its name and personality come from its instructions rather than from anything it remembers, so asking it in conversation to forget its name or become someone else was never going to work — and until now it didn't know that either, so it would try, find nothing, and leave you none the wiser. It now says so plainly and points you at the "Custom system prompt" field under Settings → Devices & services → Nives → Configure, which takes effect right away. Write just the personality you want there ("You are HAL 9000, the calm and precise computer from 2001: A Space Odyssey") — whatever you put in replaces its identity completely.
+
 ## 2.4.18
 
 - **Memories are only ever deleted from a real conversation with you.** Forgetting has always asked you to confirm first, but a request arriving outside a conversation — such as one made by an AI Task, including tasks that look at camera images — had no one to ask, and went ahead. Those requests are now declined outright, so a memory can only be removed after you've been shown it and agreed.

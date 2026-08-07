@@ -171,3 +171,29 @@ describe("assistant identity", () => {
     expect(text).toContain("HAL 9000");
   });
 });
+
+describe("identity-change requests point at the config field, not forget_memory", () => {
+  // nives#54: two users in a row tried to rename the assistant by talking to
+  // it. forget_memory correctly found nothing (its name is in the prompt, not
+  // in memory), but the assistant had no idea where its name comes from, so it
+  // couldn't redirect them and the thread ran for days.
+  it("tells the regular prompt where the persona is actually set", () => {
+    const text = buildSystemPromptText([]);
+    expect(text).toMatch(/NOT MEMORIES/i);
+    expect(text).toContain("Custom system prompt");
+    expect(text).toMatch(/Devices & services/);
+  });
+
+  it("tells the voice prompt the same thing", () => {
+    const text = buildSystemPromptText([], true);
+    expect(text).toMatch(/NOT MEMORIES/i);
+    expect(text).toContain("Custom system prompt");
+  });
+
+  it("survives a custom persona being set", () => {
+    // The guidance lives in the shared instructions, so someone already running
+    // a custom persona can still be told how to change it again.
+    const text = buildSystemPromptText([], false, "You are HAL 9000.");
+    expect(text).toContain("Custom system prompt");
+  });
+});
