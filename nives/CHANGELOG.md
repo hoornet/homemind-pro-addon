@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.21
+
+- **Nives now says which personality setting it's actually using.** There are two places to put a custom prompt — the add-on's own Configuration tab, and the Nives integration's Configure screen in Home Assistant — and if both are filled in, the integration's one wins. Nothing ever said so, so a perfectly good prompt could sit in one field doing nothing while the other quietly took precedence, with no way to tell from the outside. The add-on log now names the prompt in effect and where it came from, and says plainly when the other one is being overridden. If a personality ever seems to be ignored, that line is the first place to look.
+
 ## 2.4.20
 
 - **Routine dependency housekeeping.** Updates to the OpenAI SDK the server uses for OpenAI-compatible endpoints, the HTTP library behind its network calls, and two build-time tools. Nothing changes in how Nives works. (A proposed update to the database library was set aside for now — that release shipped without the ready-built files Nives needs, so it stays on the current version until they return.)

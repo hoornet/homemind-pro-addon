@@ -38,6 +38,50 @@ const AddFactSchema = z.object({
   ]),
 });
 
+/**
+ * Remembers the last persona we announced, so a per-request log line doesn't
+ * repeat on every message — it appears once, and again whenever it changes.
+ */
+let lastPersonaSignature = "";
+
+/**
+ * Say out loud which persona a request will actually run with, and where it
+ * came from.
+ *
+ * TWO custom-prompt fields exist and only one wins: the Home Assistant
+ * integration sends `customPrompt` with every request, and that overrides the
+ * add-on's own Custom Prompt option (CUSTOM_PROMPT). A user who fills in one
+ * while the other quietly overrides it gets no signal at all — the effective
+ * prompt was invisible from the outside, which cost a reporter and me several
+ * days on nives#54 before anyone thought to check the second field.
+ *
+ * Exported for testing.
+ */
+export function describePersonaSource(
+  requestPrompt?: string,
+  serverDefault?: string
+): string {
+  const fromRequest = Boolean(requestPrompt?.trim());
+  const fromServer = Boolean(serverDefault?.trim());
+  const text = (fromRequest ? requestPrompt : fromServer ? serverDefault : "") ?? "";
+  const flat = text.replace(/\s+/g, " ").trim();
+  const preview = flat ? `: "${flat.slice(0, 60)}${flat.length > 60 ? "…" : ""}"` : "";
+
+  if (fromRequest && fromServer) {
+    return `custom prompt from the Home Assistant integration${preview} — NOTE: the add-on's own Custom Prompt is also set and is being overridden by this one`;
+  }
+  if (fromRequest) return `custom prompt from the Home Assistant integration${preview}`;
+  if (fromServer) return `custom prompt from the add-on/server configuration${preview}`;
+  return "built-in default identity (no custom prompt set anywhere)";
+}
+
+function logPersonaSource(requestPrompt?: string, serverDefault?: string): void {
+  const signature = describePersonaSource(requestPrompt, serverDefault);
+  if (signature === lastPersonaSignature) return;
+  lastPersonaSignature = signature;
+  console.log(`[persona] ${signature}`);
+}
+
 export function createRouter(
   llm: IChatEngine,
   memory: IMemoryStore,
@@ -64,6 +108,8 @@ export function createRouter(
           details: parsed.error.errors,
         });
       }
+
+      logPersonaSource(parsed.data.customPrompt, defaultCustomPrompt);
 
       // Use streaming internally (no callback = just faster processing)
       const response = await llm.chat({
@@ -95,6 +141,8 @@ export function createRouter(
           details: parsed.error.errors,
         });
       }
+
+      logPersonaSource(parsed.data.customPrompt, defaultCustomPrompt);
 
       // Set up SSE headers
       res.setHeader("Content-Type", "text/event-stream");
