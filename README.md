@@ -103,4 +103,7 @@ Nives is in early access and we'd genuinely love to hear from you.
 
 ## License
 
+Nives — Home Assistant add-on bundling a conversation server (a hard fork of [home-mind](https://github.com/hoornet/home-mind)) and Shodh Memory.
+Copyright (c) 2026 Jure Sršen.
+
 AGPL-3.0 — see [LICENSE](LICENSE).
