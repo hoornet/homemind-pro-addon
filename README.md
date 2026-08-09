@@ -10,8 +10,6 @@
 
 <p align="center"><em>An AI assistant for Home Assistant that remembers — one add-on, memory kept on your own machine.</em></p>
 
-> _Previously known as **HomeMind PRO**. See the [v2.0.0 changelog](nives/CHANGELOG.md) for migration notes._
-
 Talk to your home in plain language — by voice or text through HA Assist — and Nives recalls your preferences, routines, device nicknames, and sensor baselines across every conversation. No re-teaching, no re-explaining.
 
 > Tell it once — *"100 ppm is normal for my NOx sensor"*, *"bedroom lights should go to 30% in the evening"*, *"call the WLED strip 'main kitchen light'"* — and it remembers next time.
@@ -136,6 +134,20 @@ What has actually diverged:
 | **Models** | BYOK: Anthropic / OpenAI / OpenRouter / Ollama | same BYOK, plus optional managed [Nives Cloud](https://nives.house) |
 
 Both are AGPL-3.0 with open repos, and both are maintained. There are **no features locked behind the Nives subscription** — Cloud exists purely as the less-tinkering option, and the BYOK path is free and never touches our servers. If you enjoy owning every moving part, home-mind is built for you; if you'd rather it just work, that's Nives.
+
+## Coming from HomeMind PRO?
+
+Nives is the same add-on under a new name, since v2.0.0 — same memory layer, same Cloud and BYOK modes, same behaviour. The name is Slovenian, from the Latin *nives*, "snows"; it's pronounced **NEE-ves**, and it's a good deal easier to say to a voice assistant than an acronym.
+
+Switching over is a clean install rather than an update, because the add-on's underlying slug changed:
+
+1. Install **Nives** from the same repository — it appears alongside your existing HomeMind PRO rather than replacing it.
+2. Copy your configuration across (your key and any options).
+3. Start Nives, check it answers, then uninstall HomeMind PRO.
+
+Memories and conversation history don't carry over, so Nives starts fresh and learns you again. Your account and Cloud subscription are unaffected — they simply live at [nives.house](https://nives.house) now, and old `homemindpro.com` links redirect there.
+
+The [v2.0.0 changelog](nives/CHANGELOG.md) has the full detail.
 
 ## Related projects
 
