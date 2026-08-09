@@ -32,7 +32,7 @@
 
 ## 2.4.14
 
-- **OpenAI SDK updated to the new major version (v7).** This is the library the server uses whenever Nives talks to an OpenAI-compatible endpoint — Nives Cloud via OpenRouter, BYOK OpenAI, Ollama, and the optional Whisper/TTS voice services. Verified end-to-end before shipping: full test suite plus a live boot test covering streamed tool calls and fact extraction. No configuration changes needed and nothing changes in how Nives behaves.
+- **OpenAI SDK updated to the new major version (v7).** This is the library the server uses whenever Nives talks to an OpenAI-compatible endpoint — Nives Cloud, BYOK OpenAI, Ollama, and the optional Whisper/TTS voice services. Verified end-to-end before shipping: full test suite plus a live boot test covering streamed tool calls and fact extraction. No configuration changes needed and nothing changes in how Nives behaves.
 
 ## 2.4.13
 
@@ -374,7 +374,7 @@ About the name: *Nives* is a Slovenian female name, from Latin *nives* — "snow
 ## 1.0.5
 
 - Add OpenRouter as a first-class LLM provider option (no more "openai" workaround)
-- Cloud mode now routes directly to OpenRouter (replaces old metering proxy)
+- Cloud mode now talks to the model endpoint directly (replaces old metering proxy)
 - Default model for OpenRouter: `anthropic/claude-haiku-4.5`
 - Updated config descriptions with OpenRouter model ID examples
 
