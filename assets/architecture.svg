@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 830" font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1a2436"/>
+    </linearGradient>
+    <linearGradient id="emerald" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="haBlue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+    <marker id="arrEm" viewBox="0 0 10 7" refX="9.5" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#10b981"/>
+    </marker>
+    <marker id="arrBlue" viewBox="0 0 10 7" refX="9.5" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#0ea5e9"/>
+    </marker>
+    <marker id="arrSlate" viewBox="0 0 10 7" refX="9.5" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <rect width="1240" height="830" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="620" y="42" text-anchor="middle" font-size="23" font-weight="700" fill="#f1f5f9">Nives — one add-on inside Home Assistant</text>
+  <text x="620" y="66" text-anchor="middle" font-size="13" fill="#94a3b8">An AI assistant that remembers, with the memory kept on your own machine</text>
+
+  <!-- ===================== YOUR MACHINE BOUNDARY ===================== -->
+  <rect x="40" y="90" width="790" height="700" rx="20" fill="#0b1220" fill-opacity="0.55" stroke="#10b981" stroke-width="1.5" stroke-dasharray="8 6"/>
+  <text x="60" y="112" font-size="12" font-weight="600" fill="#34d399">YOUR HOME ASSISTANT MACHINE</text>
+  <text x="810" y="112" text-anchor="end" font-size="11" fill="#64748b">no telemetry · no account required</text>
+
+  <!-- ===================== ROW 1: WHAT TALKS TO IT ===================== -->
+  <g filter="url(#glow)">
+    <rect x="70" y="128" width="220" height="84" rx="12" fill="#1e293b" stroke="#334155"/>
+    <rect x="70" y="128" width="220" height="4" rx="2" fill="url(#violet)"/>
+    <text x="180" y="158" text-anchor="middle" font-size="13" font-weight="600" fill="#e2e8f0">You</text>
+    <text x="180" y="178" text-anchor="middle" font-size="11" fill="#94a3b8">HA Assist — type or speak</text>
+    <text x="180" y="195" text-anchor="middle" font-size="11" fill="#94a3b8">phone · browser · Voice PE</text>
+  </g>
+
+  <g filter="url(#glow)">
+    <rect x="310" y="128" width="220" height="84" rx="12" fill="#1e293b" stroke="#334155"/>
+    <rect x="310" y="128" width="220" height="4" rx="2" fill="url(#violet)"/>
+    <text x="420" y="158" text-anchor="middle" font-size="13" font-weight="600" fill="#e2e8f0">Your automations</text>
+    <text x="420" y="178" text-anchor="middle" font-size="11" fill="#94a3b8">ai_task.generate_data</text>
+    <text x="420" y="195" text-anchor="middle" font-size="11" fill="#94a3b8">text or structured output</text>
+  </g>
+
+  <g filter="url(#glow)">
+    <rect x="550" y="128" width="250" height="84" rx="12" fill="#1e293b" stroke="#334155"/>
+    <rect x="550" y="128" width="250" height="4" rx="2" fill="url(#violet)"/>
+    <text x="675" y="158" text-anchor="middle" font-size="13" font-weight="600" fill="#e2e8f0">Your cameras</text>
+    <text x="675" y="178" text-anchor="middle" font-size="11" fill="#94a3b8">a snapshot as the question</text>
+    <text x="675" y="195" text-anchor="middle" font-size="11" fill="#94a3b8">“is this worth waking me for?”</text>
+  </g>
+
+  <!-- arrows down into HA -->
+  <line x1="180" y1="212" x2="180" y2="246" stroke="#64748b" stroke-width="1.6" marker-end="url(#arrSlate)"/>
+  <line x1="420" y1="212" x2="420" y2="246" stroke="#64748b" stroke-width="1.6" marker-end="url(#arrSlate)"/>
+  <line x1="675" y1="212" x2="675" y2="246" stroke="#64748b" stroke-width="1.6" marker-end="url(#arrSlate)"/>
+
+  <!-- ===================== ROW 2: HA CORE ===================== -->
+  <g filter="url(#glow)">
+    <rect x="70" y="250" width="730" height="112" rx="14" fill="#152232" stroke="#0ea5e9" stroke-width="1.5"/>
+    <rect x="70" y="250" width="730" height="5" rx="3" fill="url(#haBlue)"/>
+    <text x="92" y="282" font-size="15" font-weight="700" fill="#e2e8f0">Home Assistant Core</text>
+    <text x="92" y="301" font-size="11" fill="#7dd3fc">your devices, areas, floors and history — the source of truth</text>
+
+    <rect x="450" y="272" width="330" height="70" rx="10" fill="#0c1a28" stroke="#164e63"/>
+    <text x="615" y="297" text-anchor="middle" font-size="12" font-weight="600" fill="#7dd3fc">Nives integration</text>
+    <text x="615" y="316" text-anchor="middle" font-size="10.5" fill="#94a3b8">installs itself · registers the conversation agent</text>
+    <text x="615" y="332" text-anchor="middle" font-size="10.5" fill="#94a3b8">nothing to download, no URL to enter</text>
+  </g>
+
+  <!-- HA <-> addon -->
+  <line x1="260" y1="362" x2="260" y2="398" stroke="#0ea5e9" stroke-width="1.8" marker-end="url(#arrBlue)" marker-start="url(#arrBlue)"/>
+  <text x="278" y="385" font-size="10.5" fill="#7dd3fc">asks · controls devices through HA's own API</text>
+
+  <!-- ===================== ROW 3: THE ADD-ON ===================== -->
+  <g filter="url(#glow)">
+    <rect x="70" y="402" width="730" height="268" rx="16" fill="#0e2a22" stroke="#10b981" stroke-width="2"/>
+    <rect x="70" y="402" width="730" height="6" rx="3" fill="url(#emerald)"/>
+
+    <!-- snowflake mark -->
+    <g transform="translate(100,436)" stroke="#34d399" stroke-width="2.4" stroke-linecap="round">
+      <line x1="0" y1="-11" x2="0" y2="11"/>
+      <line x1="-9.5" y1="-5.5" x2="9.5" y2="5.5"/>
+      <line x1="-9.5" y1="5.5" x2="9.5" y2="-5.5"/>
+      <circle cx="0" cy="0" r="2.6" fill="#6ee7b7" stroke="none"/>
+    </g>
+    <text x="124" y="432" font-size="15" font-weight="700" fill="#ecfdf5">Nives add-on</text>
+    <text x="124" y="450" font-size="11" fill="#6ee7b7">one container · install from the store, paste a key, done</text>
+
+    <!-- shodh (deepest inside the house) -->
+    <rect x="92" y="472" width="330" height="92" rx="11" fill="#0b1f19" stroke="#134e39"/>
+    <text x="257" y="497" text-anchor="middle" font-size="12.5" font-weight="600" fill="#a7f3d0">Shodh Memory</text>
+    <text x="257" y="516" text-anchor="middle" font-size="10.5" fill="#94a3b8">semantic recall, not keyword matching</text>
+    <text x="257" y="533" text-anchor="middle" font-size="10.5" fill="#94a3b8">what you use stays strong, the rest fades</text>
+    <text x="257" y="550" text-anchor="middle" font-size="10.5" fill="#94a3b8">ask it to forget, and it forgets</text>
+
+    <!-- server (the only thing that talks outward) -->
+    <rect x="438" y="472" width="340" height="92" rx="11" fill="#0b1f19" stroke="#134e39"/>
+    <text x="608" y="497" text-anchor="middle" font-size="12.5" font-weight="600" fill="#a7f3d0">Nives server</text>
+    <text x="608" y="516" text-anchor="middle" font-size="10.5" fill="#94a3b8">the conversation engine · 11 Home Assistant tools</text>
+    <text x="608" y="533" text-anchor="middle" font-size="10.5" fill="#94a3b8">read state · call services · history · list services</text>
+    <text x="608" y="550" text-anchor="middle" font-size="10.5" fill="#94a3b8">create/edit/delete automations — always confirmed first</text>
+
+    <line x1="422" y1="518" x2="438" y2="518" stroke="#10b981" stroke-width="1.6" marker-end="url(#arrEm)" marker-start="url(#arrEm)"/>
+
+    <!-- data -->
+    <rect x="92" y="580" width="686" height="66" rx="11" fill="#071612" stroke="#134e39" stroke-dasharray="5 4"/>
+    <text x="435" y="605" text-anchor="middle" font-size="12" font-weight="600" fill="#6ee7b7">/data — your memories and conversation history</text>
+    <text x="435" y="626" text-anchor="middle" font-size="10.5" fill="#94a3b8">lives on this machine and is never uploaded anywhere · survives restarts and updates</text>
+  </g>
+
+  <!-- ===================== ROW 4: LOCAL MODEL OPTION ===================== -->
+  <g filter="url(#glow)">
+    <rect x="70" y="694" width="730" height="72" rx="12" fill="#1e293b" stroke="#475569" stroke-dasharray="5 4"/>
+    <text x="435" y="722" text-anchor="middle" font-size="12.5" font-weight="600" fill="#e2e8f0">Optional: run the model at home too — Ollama or any OpenAI-compatible endpoint on your LAN</text>
+    <text x="435" y="744" text-anchor="middle" font-size="10.5" fill="#94a3b8">then nothing leaves the house at all. Give it a model that can call tools, and 8k+ context.</text>
+  </g>
+
+  <!-- ===================== CROSSING THE BOUNDARY ===================== -->
+  <line x1="800" y1="518" x2="878" y2="518" stroke="#10b981" stroke-width="2" marker-end="url(#arrEm)" marker-start="url(#arrEm)"/>
+
+  <!-- ===================== THE MODEL (OUTSIDE) ===================== -->
+  <text x="1045" y="404" text-anchor="middle" font-size="14" font-weight="700" fill="#f1f5f9">The model does the thinking</text>
+  <text x="1045" y="424" text-anchor="middle" font-size="11" fill="#94a3b8">pick one — swap any time</text>
+
+  <g filter="url(#glow)">
+    <rect x="880" y="440" width="330" height="86" rx="12" fill="#1e293b" stroke="#10b981" stroke-width="1.5"/>
+    <text x="1045" y="468" text-anchor="middle" font-size="12.5" font-weight="600" fill="#a7f3d0">Nives Cloud</text>
+    <text x="1045" y="487" text-anchor="middle" font-size="10.5" fill="#94a3b8">one key, one plan, no model to choose</text>
+    <text x="1045" y="504" text-anchor="middle" font-size="10.5" fill="#94a3b8">we keep it on the best one for the price</text>
+    <text x="1045" y="519" text-anchor="middle" font-size="10" fill="#64748b">optional — nothing is locked behind it</text>
+  </g>
+
+  <g filter="url(#glow)">
+    <rect x="880" y="540" width="330" height="86" rx="12" fill="#1e293b" stroke="#475569"/>
+    <text x="1045" y="568" text-anchor="middle" font-size="12.5" font-weight="600" fill="#e2e8f0">Your own key</text>
+    <text x="1045" y="587" text-anchor="middle" font-size="10.5" fill="#94a3b8">Anthropic · OpenAI · OpenRouter · Ollama</text>
+    <text x="1045" y="604" text-anchor="middle" font-size="10.5" fill="#94a3b8">your account, your model, your bill</text>
+    <text x="1045" y="619" text-anchor="middle" font-size="10" fill="#64748b">free — never touches our servers</text>
+  </g>
+
+  <!-- what actually crosses -->
+  <g>
+    <rect x="880" y="646" width="330" height="120" rx="12" fill="#0b1220" stroke="#334155"/>
+    <text x="900" y="670" font-size="11" font-weight="700" fill="#e2e8f0">What crosses that line</text>
+    <text x="900" y="691" font-size="10.5" fill="#94a3b8">→ what you just said</text>
+    <text x="900" y="709" font-size="10.5" fill="#94a3b8">→ the few memories relevant to it</text>
+    <text x="900" y="727" font-size="10.5" fill="#94a3b8">→ your floors, areas and devices</text>
+    <text x="900" y="750" font-size="10.5" fill="#6ee7b7">Never: the memory database itself.</text>
+  </g>
+
+  <text x="620" y="806" text-anchor="middle" font-size="10.5" fill="#475569">AGPL-3.0 · github.com/hoornet/nives — the same engine, self-hosted the DIY way, is github.com/hoornet/home-mind</text>
+</svg>

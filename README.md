@@ -1,23 +1,76 @@
-# Nives
+<p align="center">
+  <img src="nives/logo.png" alt="Nives" width="380">
+</p>
 
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
-[![Add-on version](https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fhoornet%2Fnives%2Fmaster%2Fnives%2Fconfig.yaml&query=%24.version&label=Add--on&color=brightgreen)](nives/CHANGELOG.md)
+<p align="center">
+  <a href="LICENSE"><img alt="License: AGPL v3" src="https://img.shields.io/badge/License-AGPL%20v3-blue.svg"></a>
+  <a href="nives/CHANGELOG.md"><img alt="Add-on version" src="https://img.shields.io/badge/dynamic/yaml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fhoornet%2Fnives%2Fmaster%2Fnives%2Fconfig.yaml&query=%24.version&label=Add--on&color=10b981"></a>
+  <img alt="Architectures" src="https://img.shields.io/badge/arch-amd64%20%C2%B7%20aarch64-64748b">
+</p>
+
+<p align="center"><em>An AI assistant for Home Assistant that remembers — one add-on, memory kept on your own machine.</em></p>
 
 > _Previously known as **HomeMind PRO**. See the [v2.0.0 changelog](nives/CHANGELOG.md) for migration notes._
 
-**An AI assistant for Home Assistant that remembers.** Talk to your home in plain language — by voice or text through HA Assist — and Nives recalls your preferences, routines, device nicknames, and sensor baselines across every conversation. No re-teaching, no re-explaining.
+Talk to your home in plain language — by voice or text through HA Assist — and Nives recalls your preferences, routines, device nicknames, and sensor baselines across every conversation. No re-teaching, no re-explaining.
 
 > Tell it once — *"100 ppm is normal for my NOx sensor"*, *"bedroom lights should go to 30% in the evening"*, *"call the WLED strip 'main kitchen light'"* — and it remembers next time.
 
 ## What you get
 
 - **Persistent memory** — preferences, routines, sensor baselines, device nicknames. Survives restarts.
+- **Forgets when you ask it to** — *"forget that my canary word is bumblebee"*. It quotes the exact memory back and waits for your yes before deleting anything.
 - **Natural voice & text control** through Home Assistant Assist.
 - **Knows your home** — reads your floors, areas, and device capabilities, so it always knows which room a light is in and how to control it.
 - **Creates & manages automations** — just ask ("turn the porch light on at sunset", "make the evening scene 30 minutes earlier") and Nives builds, edits, lists, or removes Home Assistant automations for you — always confirming before it changes anything, and using what it remembers about your home (your "evening", your preferred brightness).
 - **Works inside your automations** — Nives is also a Home Assistant **AI Task** provider: call `ai_task.generate_data` from any automation to get an answer or structured data, reasoned with your home's context. It can even look at a **camera snapshot** and tell you what matters (with a vision-capable model) — great for smarter, low-false-alarm camera and doorbell alerts.
 - **Your memories are stored on your machine** — the memory database lives on your Home Assistant box, not ours, and there's no telemetry. (To answer you, Nives does send the *relevant* memories plus your home layout to the model with each request — the add-on docs spell out exactly what goes where. Want none of it to leave the house? Run a local model via Ollama.)
 - **Two ways to power it** — managed **Nives Cloud** (recommended) or **bring your own key**. Both run the exact same on-device server and memory; only the AI endpoint differs.
+
+## What it sounds like
+
+Teaching it something, and correcting it later:
+
+```
+You:   100 ppm is normal for my NOx sensor, remember that.
+Nives: Got it — I'll treat 100 ppm as your normal baseline.
+
+       ── days later, in a brand new conversation ──
+
+You:   How's the air quality?
+Nives: The NOx sensor reads 98 ppm — normal for your home.
+
+You:   Forget that my canary word is bumblebee — it's honeybee now.
+Nives: I'll forget exactly this memory: "User's test canary word is
+       bumblebee". Shall I proceed?
+You:   yes
+Nives: Forgotten. I'll remember that your canary word is now honeybee.
+```
+
+Building an automation by describing it — and being shown it before it exists:
+
+```
+You:   Create an automation that turns on the kitchen lights at 19:00.
+Nives: I'll create an automation that turns on the kitchen lights every day
+       at 19:00. It has no conditions, so it will run regardless of who is
+       home or any other state. Shall I create it?
+You:   yes
+Nives: The automation "Nives: Kitchen lights at 19:00" has been created and
+       enabled.
+```
+
+Nothing is written to your Home Assistant, and no memory is deleted, until you say yes — the confirmation is enforced by the server, not left to the model's good manners.
+
+## How it fits together
+
+![Nives architecture](assets/architecture.png)
+
+Everything that stores anything runs on your Home Assistant machine, in one container. The only thing that leaves is the request itself: what you said, the handful of memories relevant to it, and your home's layout. Your memory database never goes anywhere — and if you point Nives at Ollama on your own LAN, nothing leaves at all.
+
+Two services share that container:
+
+- **Nives server** — the conversation engine. Connects to Home Assistant automatically (no URL or token to configure) and controls your devices through HA's own tools.
+- **Shodh Memory** — on-device cognitive memory with semantic search, so Nives surfaces the right context at the right moment. ([Shodh Memory](https://github.com/varun29ankuS/shodh-memory) is an independent open-source project — Nives integrates it, and the same engine powers home-mind.)
 
 ## Choosing how to power Nives
 
@@ -45,9 +98,12 @@ A few honest notes so it goes smoothly:
 
 - Your model **must support function / tool calling** — that's how Nives actually controls your home.
 - Memory quality scales with the model: stronger models extract and recall facts more reliably.
+- **Running it locally?** Give it room and a capable model. The system prompt plus tool definitions come to roughly 6,700 tokens before you've said a word, so a default 4k context window is already full — use 8k or more. And small models tend to *narrate* tool calls rather than make them: we've watched llama3.1:8b cheerfully report turning on a light it never touched. Around 14B is where it starts behaving.
 - For a fully self-hosted, local-first setup, the open-source **[home-mind](https://github.com/hoornet/home-mind)** project (which Nives grew from) is purpose-built for exactly that.
 
 ## Install
+
+You need Home Assistant OS or Supervised (the add-on store), on amd64 or aarch64 — a Raspberry Pi 4/5 is fine. Running HA in bare Docker or Core, with no add-on store? Use [home-mind](https://github.com/hoornet/home-mind) instead; it's the same engine in Docker Compose form.
 
 1. In Home Assistant, open **Settings → Add-ons → Add-on Store**.
 2. Click the **⋮** menu (top-right) → **Repositories**.
@@ -57,13 +113,6 @@ A few honest notes so it goes smoothly:
 6. **Start** the add-on.
 
 Then point Home Assistant at it: **Settings → Voice assistants → (your assistant) → Conversation agent → Nives**. Now just talk to your home — type in Assist, or speak if you've set up a voice pipeline.
-
-## Under the hood
-
-Nives bundles two services into one add-on:
-
-- **Nives server** — the conversation engine. Connects to Home Assistant automatically (no URL or token to configure) and controls your devices through HA's own tools.
-- **Shodh memory** — an on-device cognitive memory with semantic search, so Nives surfaces the right context at the right moment. The memory store itself never leaves your HA machine. ([Shodh Memory](https://github.com/varun29ankuS/shodh-memory) is an independent open-source project — Nives integrates it, and the same engine powers home-mind.)
 
 ## Nives or home-mind?
 
@@ -79,7 +128,7 @@ What has actually diverged:
 | | home-mind | Nives |
 |---|---|---|
 | **Install** | Docker Compose + manual integration setup | One HA add-on, self-configuring |
-| **HA tools** | 5 (read state, list/search entities, call services, history) | 10 — those plus automation **create/list/update/delete** and service discovery, behind a server-enforced confirmation gate |
+| **HA tools** | 6 (read state, list/search entities, call services, history, forget a memory) | 11 — those plus automation **create/list/update/delete** and service discovery, behind a server-enforced confirmation gate |
 | **AI Task** | — | `ai_task.generate_data` (text + structured output), usable inside your automations |
 | **Vision** | — | camera snapshots as input — "is this expected?" on a doorbell frame |
 | **Voice satellites** | — | reopens the mic when it asks you a question (Voice PE `continue_conversation`) |
