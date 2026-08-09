@@ -10,6 +10,10 @@
 
 <p align="center"><em>An AI assistant for Home Assistant that remembers — one add-on, memory kept on your own machine.</em></p>
 
+<p align="center">
+  <img src="assets/memory-recall.png" alt="Asking Nives what it remembers, and getting back a list of preferences and routines" width="540">
+</p>
+
 Talk to your home in plain language — by voice or text through HA Assist — and Nives recalls your preferences, routines, device nicknames, and sensor baselines across every conversation. No re-teaching, no re-explaining.
 
 > Tell it once — *"100 ppm is normal for my NOx sensor"*, *"bedroom lights should go to 30% in the evening"*, *"call the WLED strip 'main kitchen light'"* — and it remembers next time.
@@ -25,39 +29,19 @@ Talk to your home in plain language — by voice or text through HA Assist — a
 - **Your memories are stored on your machine** — the memory database lives on your Home Assistant box, not ours, and there's no telemetry. (To answer you, Nives does send the *relevant* memories plus your home layout to the model with each request — the add-on docs spell out exactly what goes where. Want none of it to leave the house? Run a local model via Ollama.)
 - **Two ways to power it** — managed **Nives Cloud** (recommended) or **bring your own key**. Both run the exact same on-device server and memory; only the AI endpoint differs.
 
-## What it sounds like
+## Teach it, then change your mind
 
-Teaching it something, and correcting it later:
+Four separate conversations, in order. Nothing carries over between them except memory:
 
-```
-You:   100 ppm is normal for my NOx sensor, remember that.
-Nives: Got it — I'll treat 100 ppm as your normal baseline.
+![Teaching Nives a word, recalling it in a new conversation, replacing it, and recalling the new one](assets/memory-story.png)
 
-       ── days later, in a brand new conversation ──
+It quotes the exact stored memory back and does nothing until you confirm. It only ever forgets the one you name — *"don't forget to water the plants"* is still a reminder, not a deletion — and when several memories could match, it lists them and deletes nothing.
 
-You:   How's the air quality?
-Nives: The NOx sensor reads 98 ppm — normal for your home.
+## Automations, described in a sentence
 
-You:   Forget that my canary word is bumblebee — it's honeybee now.
-Nives: I'll forget exactly this memory: "User's test canary word is
-       bumblebee". Shall I proceed?
-You:   yes
-Nives: Forgotten. I'll remember that your canary word is now honeybee.
-```
+![Asking for an automation in Assist, and the resulting automation in Home Assistant's own list](assets/automation-proof.png)
 
-Building an automation by describing it — and being shown it before it exists:
-
-```
-You:   Create an automation that turns on the kitchen lights at 19:00.
-Nives: I'll create an automation that turns on the kitchen lights every day
-       at 19:00. It has no conditions, so it will run regardless of who is
-       home or any other state. Shall I create it?
-You:   yes
-Nives: The automation "Nives: Kitchen lights at 19:00" has been created and
-       enabled.
-```
-
-Nothing is written to your Home Assistant, and no memory is deleted, until you say yes — the confirmation is enforced by the server, not left to the model's good manners.
+Notice what it tells you *before* building anything: this automation has no conditions, so it will run regardless of who is home. Nothing is written to your Home Assistant, and no memory is deleted, until you say yes — the confirmation is enforced by the server, not left to the model's good manners.
 
 ## How it fits together
 
