@@ -204,6 +204,20 @@ The add-on has its own semver, independent of the server version. CHANGELOG note
 
 **IMPORTANT:** The `version` field in `rootfs/opt/nives/manifest.json` must always match the add-on version in `config.yaml`. The `install-integration` s6 script compares these two versions to decide whether to overwrite the integration files on disk — if they match, the update is skipped and users keep running stale integration code.
 
+### Cutting a release — the step that keeps getting skipped
+
+A version bump is **not** a release. HA updates users from `config.yaml`, so the add-on ships fine without a git tag — which is exactly why tagging gets forgotten, and why on 2026-08-09 this repo had **thirty-odd versions shipped and zero GitHub releases**. Anyone who found the repo saw no release history at all and reasonably concluded it was dead. The tag is not for Home Assistant, it is for the human deciding whether to trust the project.
+
+After the version bump is pushed, in order:
+
+1. Watch CI **by SHA** — `gh run list --json headSha,status,conclusion` filtered to your commit. Never `--limit 1`; that has reported the *previous* run's success more than once.
+2. Confirm **both** GHCR images exist before telling anyone to update:
+   `curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $(curl -s "https://ghcr.io/token?scope=repository:hoornet/nives-amd64:pull&service=ghcr.io" | jq -r .token)" https://ghcr.io/v2/hoornet/nives-amd64/manifests/<version>` — and again for `nives-aarch64`. The store reads `config.yaml` from git instantly while images publish minutes later; a user who updates in that gap gets `404 manifest unknown` (this happened to @pitzoid).
+3. `git tag -a v<version> -m "Nives <version>"` && `git push origin v<version>`
+4. `gh release create v<version> --title "…" --notes-file …` — notes written for users, in the CHANGELOG voice, not a diff summary.
+
+Docs-only commits (README, assets) don't need a version bump — no add-on content changed, and bumping would push a pointless update to every user. CI still rebuilds, which is harmless.
+
 ## Related Projects (on this machine)
 
 - `/home/hoornet/projects/homemind-projects/home-mind` — OSS server source (AGPL, historic origin of the fork)
