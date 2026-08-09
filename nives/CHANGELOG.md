@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.4.22
+
+- **Nives no longer keeps notes about what it has forgotten.** Ask it to forget something and the memory goes — but the asking was itself memorable, so Nives could store a *new* memory about the forgetting: "you no longer want your canary word remembered", "you confirmed deletion of the bedroom cooling automation". Each one is harmless on its own, they quietly accumulate, and they come back when you ask Nives what it remembers about you — where a note saying something isn't remembered is a peculiar thing to be told. Nives now stores nothing at all about a forget. Notes of this kind already in your memory are cleared by the routine tidy-up that runs shortly after the add-on starts, so they should be gone on their own once you've updated — nothing for you to do.
+
 ## 2.4.21
 
 - **Nives now says which personality setting it's actually using.** There are two places to put a custom prompt — the add-on's own Configuration tab, and the Nives integration's Configure screen in Home Assistant — and if both are filled in, the integration's one wins. Nothing ever said so, so a perfectly good prompt could sit in one field doing nothing while the other quietly took precedence, with no way to tell from the outside. The add-on log now names the prompt in effect and where it came from, and says plainly when the other one is being overridden. If a personality ever seems to be ignored, that line is the first place to look.
