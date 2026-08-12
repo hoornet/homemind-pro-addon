@@ -14,6 +14,13 @@
 # for a restart is ordinary (HACS does the same); an add-on rebooting the
 # house unasked is not.
 #
+# Since 2.4.23 the integration itself raises a fixable "Restart required"
+# repair (Settings → Repairs, one-click restart — the HACS pattern; see
+# rootfs/opt/nives/__init__.py and repairs.py) and dismisses this service's
+# notification when it does. The notification below stays as the fallback for
+# the two cases where no repair is possible: a fresh install (no integration
+# running yet) and an update while the running integration predates 2.4.23.
+#
 # install-integration writes the flag (containing "install" or "update") when
 # it copies new files. This service runs at the end of the startup chain and
 # turns the flag into a persistent notification in Home Assistant. The

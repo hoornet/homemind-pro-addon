@@ -94,7 +94,7 @@ Use your own API key from any supported provider. Your data goes directly to the
 
 The **Nives** conversation agent integration is automatically installed when the add-on starts. No manual installation needed.
 
-After installing or updating, Home Assistant needs one restart to load the integration — Nives leaves a notification asking for it, and you restart whenever it suits you (Settings > System > Restart). The add-on never restarts Home Assistant by itself.
+After installing or updating, Home Assistant needs one restart to load the integration. After an update, Nives files a **Restart required** repair under **Settings > Repairs** — click Submit there to restart at a moment that suits you. On a fresh install it leaves a notification instead, and you restart via Settings > System > Restart. Either way, the add-on never restarts Home Assistant by itself.
 
 Once restarted, go to **Settings > Voice assistants** and select **Nives** as your conversation agent.
 
@@ -123,7 +123,7 @@ curl -H "Authorization: Bearer <token>" http://<addon-host>:3100/api/chat ...
 
 | Option | Description |
 |--------|-------------|
-| Custom Prompt | Override the assistant's personality. Leave empty for the default. |
+| Custom Prompt | The assistant's personality — what you write replaces the default persona outright (e.g. "You are HAL 9000, the calm and precise computer from 2001"). This is the one place to set it; it applies once the add-on restarts. Leave empty for the default. |
 | Log Level | `debug`, `info`, `warn`, or `error`. Use `debug` for troubleshooting. |
 
 ---
@@ -151,7 +151,7 @@ This is true in **both** Cloud and BYOK mode — the difference is only *which* 
 ## Troubleshooting
 
 - **Add-on won't start**: Check the Log tab. Most common issue: missing or invalid API key.
-- **Nives doesn't appear in Voice assistants**: Restart Home Assistant Core once after the add-on starts — there should be a notification reminding you.
+- **Nives doesn't appear in Voice assistants**: Restart Home Assistant Core once after the add-on starts — there should be a notification (or, after updates, a repair under Settings > Repairs) reminding you.
 - **Slow responses**: LLM responses can take 10–60 seconds depending on the model and tool usage. This is normal.
 - **High memory usage**: Shodh Memory has a known memory leak. The add-on includes a watchdog that restarts it automatically when it exceeds 512 MB.
 

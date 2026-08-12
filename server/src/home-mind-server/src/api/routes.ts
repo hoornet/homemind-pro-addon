@@ -48,12 +48,14 @@ let lastPersonaSignature = "";
  * Say out loud which persona a request will actually run with, and where it
  * came from.
  *
- * TWO custom-prompt fields exist and only one wins: the Home Assistant
- * integration sends `customPrompt` with every request, and that overrides the
- * add-on's own Custom Prompt option (CUSTOM_PROMPT). A user who fills in one
- * while the other quietly overrides it gets no signal at all — the effective
- * prompt was invisible from the outside, which cost a reporter and me several
- * days on nives#54 before anyone thought to check the second field.
+ * A `customPrompt` sent with the request overrides the add-on's own Custom
+ * Prompt option (CUSTOM_PROMPT). Since 2.4.23 the integration's conversation
+ * agent no longer sends one — its duplicate persona field was removed after
+ * two fields with one invisible winner cost a reporter and me several days
+ * on nives#54 — so for ordinary chat the add-on option is simply the one in
+ * effect. Per-request prompts still arrive from the AI Task entity (its
+ * fixed task-mode prompt) and from API clients, which is why this logging
+ * stays: the override path exists, it just has no user-facing duplicate.
  *
  * Exported for testing.
  */
@@ -68,10 +70,10 @@ export function describePersonaSource(
   const preview = flat ? `: "${flat.slice(0, 60)}${flat.length > 60 ? "…" : ""}"` : "";
 
   if (fromRequest && fromServer) {
-    return `custom prompt from the Home Assistant integration${preview} — NOTE: the add-on's own Custom Prompt is also set and is being overridden by this one`;
+    return `custom prompt sent with the request${preview} — NOTE: the add-on's Custom Prompt option is also set and is overridden for this request`;
   }
-  if (fromRequest) return `custom prompt from the Home Assistant integration${preview}`;
-  if (fromServer) return `custom prompt from the add-on/server configuration${preview}`;
+  if (fromRequest) return `custom prompt sent with the request${preview}`;
+  if (fromServer) return `custom prompt from the add-on configuration${preview}`;
   return "built-in default identity (no custom prompt set anywhere)";
 }
 

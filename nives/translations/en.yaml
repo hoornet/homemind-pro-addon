@@ -36,7 +36,10 @@ configuration:
   custom_prompt:
     name: Custom Prompt
     description: >-
-      Override the AI assistant's personality and instructions. Leave empty for the default Nives persona.
+      Give the assistant its personality — whatever you write here replaces the
+      default Nives persona outright, so one sentence describing who it is does
+      the job (e.g. "You are HAL 9000, the calm and precise computer from 2001").
+      Applies once the add-on restarts. Leave empty for the default Nives persona.
   log_level:
     name: Log Level
     description: >-

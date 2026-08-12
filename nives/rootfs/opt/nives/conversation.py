@@ -22,7 +22,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import NivesConfigEntry
 from .const import (
     API_CHAT_ENDPOINT,
-    CONF_CUSTOM_PROMPT,
     DEFAULT_TIMEOUT,
 )
 
@@ -188,9 +187,11 @@ class NivesConversationAgent(ConversationEntity):
         if language:
             payload["language"] = language
 
-        custom_prompt = self.entry.options.get(CONF_CUSTOM_PROMPT)
-        if custom_prompt:
-            payload["customPrompt"] = custom_prompt
+        # The persona (Custom Prompt) is deliberately NOT sent per request. It
+        # lives in one place only — the add-on's Configuration tab — and the
+        # server applies it from there. The integration used to send its own
+        # options value here, which silently overrode the add-on field and
+        # cost days of confusion on nives#54.
 
         headers: dict = {}
         if api_token:

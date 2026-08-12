@@ -37,6 +37,13 @@ if [ "$NEEDS_UPDATE" = "true" ]; then
         rm -rf "$TARGET/brand"
         cp -rf "$SOURCE/brand" "$TARGET/"
     fi
+    # Translations: custom integrations load UI text (config flow, repair
+    # issues) from translations/<lang>.json at runtime — strings.json alone
+    # is only the dev-time source. Replace wholesale, same as brand/.
+    if [ -d "$SOURCE/translations" ]; then
+        rm -rf "$TARGET/translations"
+        cp -rf "$SOURCE/translations" "$TARGET/"
+    fi
     echo "[integration] Nives integration installed at $TARGET"
 
     # Home Assistant has to be restarted before it will load the files we just

@@ -4,7 +4,9 @@ import { describePersonaSource } from "./routes.js";
 describe("describePersonaSource", () => {
   // nives#54: a user set the add-on's Custom Prompt correctly and nothing
   // happened, because the integration was also sending one and silently won.
-  // Nothing in the logs said so, which is what made it take days.
+  // Since 2.4.23 the integration's duplicate persona field is gone; requests
+  // carrying a customPrompt now come from the AI Task entity or API clients,
+  // and the add-on's Configuration tab is the one user-facing field.
   const HAL = "You are HAL 9000, the calm and precise computer from 2001: A Space Odyssey.";
 
   it("names the built-in default when nothing is set", () => {
@@ -13,18 +15,18 @@ describe("describePersonaSource", () => {
 
   it("names the add-on config when only that is set", () => {
     const line = describePersonaSource(undefined, HAL);
-    expect(line).toMatch(/add-on\/server configuration/i);
+    expect(line).toMatch(/add-on configuration/i);
     expect(line).toContain("You are HAL 9000");
   });
 
-  it("names the integration when only that is set", () => {
+  it("names the request when only that carries a prompt", () => {
     const line = describePersonaSource(HAL, undefined);
-    expect(line).toMatch(/Home Assistant integration/i);
+    expect(line).toMatch(/sent with the request/i);
   });
 
   it("WARNS that the add-on's prompt is overridden when both are set", () => {
     const line = describePersonaSource("You are Ava.", HAL);
-    expect(line).toMatch(/Home Assistant integration/i);
+    expect(line).toMatch(/sent with the request/i);
     expect(line).toMatch(/overridden/i);
     expect(line).toContain("You are Ava.");
     // The losing value must not be shown as if it were in effect.
@@ -33,7 +35,7 @@ describe("describePersonaSource", () => {
 
   it("treats whitespace-only as unset", () => {
     expect(describePersonaSource("   ", undefined)).toMatch(/built-in default/i);
-    expect(describePersonaSource("   ", HAL)).toMatch(/add-on\/server configuration/i);
+    expect(describePersonaSource("   ", HAL)).toMatch(/add-on configuration/i);
   });
 
   it("truncates a long prompt instead of dumping it", () => {
