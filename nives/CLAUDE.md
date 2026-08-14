@@ -22,8 +22,7 @@ This repo is **AGPL-3.0**. The server code in `server/` is a **hard fork** of `h
 | `home-mind` | AGPL-3.0 | **Public** | Historic origin of `server/` code. **Now fully independent** — no sync in either direction |
 | `nives-cloud` | Proprietary | **Private** | Cloud signup/billing for Nives Cloud subscribers (renamed from `home-mind-cloud` end-to-end on 2026-06-06 — repo, dir, and VPS) |
 | `nives-app` | Proprietary | **Private** | Closed-source mobile/PWA frontend for Nives subscribers (Flutter package id `app.nives.assistant`) |
-| `home-mind-hacs` (Legacy) | AGPL-3.0 | **Public** | Integration now ships inside this addon's `rootfs/`; HACS repo kept for archive. Local copy under `homemind-projects/Legacy/` |
-| `home-mind-proxy` (Legacy) | n/a | n/a | Replaced by direct OpenRouter integration; GitHub repo doesn't exist anymore. Local copy under `homemind-projects/Legacy/` |
+| `home-mind-hacs` | AGPL-3.0 | **Public** | **Maintained.** The HACS integration OSS `home-mind` users install. This add-on ships its own copy from `rootfs/`; the two are independent and must not be synced |
 
 **Critical rules:**
 - Never add proprietary code from closed-source repos

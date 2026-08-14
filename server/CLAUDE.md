@@ -148,7 +148,7 @@ Optional: `PORT` (default 3100), `API_TOKEN` (bearer token for auth — when set
 
 ### Nives Cloud Mode
 
-There is **no proxy**. In cloud mode `options-to-env.sh` sets `LLM_PROVIDER=openai` + `OPENAI_BASE_URL=https://openrouter.ai/api/v1` + `OPENAI_API_KEY=<the user's provisioned OpenRouter key>`, and the add-on talks to OpenRouter directly.
+There is **no proxy**. In cloud mode `options-to-env.sh` sets `LLM_PROVIDER=openai` plus a base URL and the user's provisioned key, and the add-on calls that endpoint directly — nothing in the request path goes through us. Read `rootfs/usr/local/bin/options-to-env.sh` for the exact values; they are not restated here, because a doc that repeats them serves no purpose the script does not already serve.
 
 The model is not hardcoded: at boot the add-on asks `GET https://nives.house/api/addon/config` (bearer = the user's key) which returns `@preset/nives-<tier>`, so the model lineup is managed server-side with no add-on release. Bounded and failure-safe — an 8s timeout, falling back to `@preset/nives-standard` if the cloud is briefly unreachable. Chat itself never goes through nives.house.
 
