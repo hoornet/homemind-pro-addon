@@ -1,0 +1,27 @@
+name: Public content check
+
+# This repo is public. Anything tracked here is published on push, and git
+# history keeps it forever — deleting a file later does not unpublish it. This
+# job is the backstop for content that was only ever meant to be internal.
+#
+# It is deliberately separate from build.yml: it must run and report even when
+# a build fails, and it should stay fast enough to never be a reason to skip CI.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  check:
+    name: No internal-only content
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          submodules: false
+
+      - name: Scan tracked files
+        run: .github/scripts/check-public-content.sh
