@@ -212,16 +212,8 @@ After the version bump is pushed, in order:
 
 1. Watch CI **by SHA** — `gh run list --json headSha,status,conclusion` filtered to your commit. Never `--limit 1`; that has reported the *previous* run's success more than once.
 2. Confirm **both** GHCR images exist before telling anyone to update:
-   `curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $(curl -s "https://ghcr.io/token?scope=repository:hoornet/nives-amd64:pull&service=ghcr.io" | jq -r .token)" https://ghcr.io/v2/hoornet/nives-amd64/manifests/<version>` — and again for `nives-aarch64`. The store reads `config.yaml` from git instantly while images publish minutes later; a user who updates in that gap gets `404 manifest unknown` (this happened to @pitzoid).
+   `curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $(curl -s "https://ghcr.io/token?scope=repository:hoornet/nives-amd64:pull&service=ghcr.io" | jq -r .token)" https://ghcr.io/v2/hoornet/nives-amd64/manifests/<version>` — and again for `nives-aarch64`. The store reads `config.yaml` from git instantly while images publish minutes later; a user who updates in that gap gets `404 manifest unknown` — this has already caught a real user once.
 3. `git tag -a v<version> -m "Nives <version>"` && `git push origin v<version>`
 4. `gh release create v<version> --title "…" --notes-file …` — notes written for users, in the CHANGELOG voice, not a diff summary.
 
 Docs-only commits (README, assets) don't need a version bump — no add-on content changed, and bumping would push a pointless update to every user. CI still rebuilds, which is harmless.
-
-## Related Projects (on this machine)
-
-- `/home/hoornet/projects/homemind-projects/home-mind` — OSS server source (AGPL, historic origin of the fork)
-- `/home/hoornet/projects/homemind-projects/nives-cloud` — Nives Cloud signup/billing (proprietary; renamed from `home-mind-cloud` 2026-06-06)
-- `/home/hoornet/projects/homemind-projects/nives-app` — Closed-source mobile/PWA frontend (renamed from `home-mind-app` 2026-05-11)
-- `/home/hoornet/projects/homemind-projects/Legacy/home-mind-hacs` — archived companion HACS integration
-- `/home/hoornet/projects/homemind-projects/Legacy/home-mind-proxy` — archived OR proxy
