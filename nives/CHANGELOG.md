@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.24
+
+- **Bring-your-own-key now works with OpenAI's newest models.** Pointing Nives at GPT-5 or the o-series with your own OpenAI key failed before the model ever got a chance to answer: those models renamed the setting that limits how long a reply may be, and Nives was still sending the previous name. Nives now asks the endpoint which name it expects and remembers the answer, so the setting arrives correctly everywhere — OpenAI's newest models, OpenAI's older ones, and every other OpenAI-compatible endpoint Nives supports, local models included. There is nothing to configure, and setups that already worked are untouched. Thanks to @Kristofer-KNE for the report (#60).
+- **A clearer explanation when a thinking model runs out of room.** Models that reason before they answer spend the same reply-length budget on that reasoning, so a long deliberation can leave nothing over for the answer itself. When that happens, Nives now tells you exactly that and suggests a non-reasoning model or a lower reasoning effort, rather than pointing you at the size of your prompt.
+
 ## 2.4.23
 
 - **There is now exactly one place to set the assistant's personality.** Until now there were two Custom Prompt fields — one in the add-on's Configuration tab and one tucked behind the Nives integration's Configure button — and whichever was set in the second silently won. Fill in one while something sat in the other and your prompt did nothing, with no hint as to why. The integration field is gone; the add-on's Configuration tab — where your keys, logs and updates already live — is now the single home for the personality, and what you write there is always what runs. If your prompt lived in the integration field, move it over once (Settings → Apps → Nives → Configuration, then restart the add-on when asked) — and asking Nives to change its name will point you to the right place too.
