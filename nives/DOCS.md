@@ -31,11 +31,11 @@ Nives bundles two services in one add-on:
 
 ## Cloud Mode (recommended)
 
-Use Nives Cloud — a managed AI service with a monthly token budget. No API key management, no surprise bills.
+Use Nives Cloud — a managed AI service on a prepaid balance. Buy a ticket, use it until it runs out, top up when you like. No subscription, no API key management, no surprise bills.
 
 ### Setup
 
-1. Sign up at [nives.house](https://nives.house) — one plan, everything included
+1. Buy a ticket at [nives.house](https://nives.house) — €10, everything included
 2. Copy your **Nives API Key** from your dashboard
 3. In the add-on Configuration tab:
    - Set **LLM Mode** to `cloud`

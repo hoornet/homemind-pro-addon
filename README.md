@@ -66,15 +66,15 @@ With Nives Cloud you **never choose, test, or babysit a model.** Behind the scen
 
 **How it works:**
 
-1. Sign up at **[nives.house](https://nives.house)** — one plan, everything included.
+1. Buy a ticket at **[nives.house](https://nives.house)** — **€10, no subscription**; for most homes one ticket covers weeks of everyday use, and you pay again only when it runs out.
 2. Copy the key it gives you.
 3. Paste it into the add-on's **Cloud** section and save.
 
-That's it — no AI provider accounts to manage, no model names to research, no surprise bills (a monthly usage allowance is included). See **[nives.house](https://nives.house)** for current pricing.
+That's it — no AI provider accounts to manage, no model names to research, no surprise bills (Nives warns you before the balance runs out, and tops up automatically only if you asked it to). See **[nives.house](https://nives.house)** for details.
 
 ### Bring Your Own Key (BYOK) — for tinkerers
 
-Prefer full control? Run Nives with **your own** provider key — Anthropic, OpenAI, OpenRouter, or a local Ollama endpoint — and pick your own model. No subscription.
+Prefer full control? Run Nives with **your own** provider key — Anthropic, OpenAI, OpenRouter, or a local Ollama endpoint — and pick your own model. Nothing to buy from us, ever.
 
 A few honest notes so it goes smoothly:
 
@@ -123,7 +123,7 @@ What has actually diverged:
 | **arm64 / Raspberry Pi** | official Shodh Docker image is amd64-only | add-on ships arm64 binaries — works on a Pi / arm64 HAOS out of the box |
 | **Models** | BYOK: Anthropic / OpenAI / OpenRouter / Ollama | same BYOK, plus optional managed [Nives Cloud](https://nives.house) |
 
-Both are AGPL-3.0 with open repos, and both are maintained. There are **no features locked behind the Nives subscription** — Cloud exists purely as the less-tinkering option, and the BYOK path is free and never touches our servers. If you enjoy owning every moving part, home-mind is built for you; if you'd rather it just work, that's Nives.
+Both are AGPL-3.0 with open repos, and both are maintained. There are **no features locked behind payment** — Cloud exists purely as the less-tinkering option, and the BYOK path is free and never touches our servers. If you enjoy owning every moving part, home-mind is built for you; if you'd rather it just work, that's Nives.
 
 ## Coming from HomeMind PRO?
 
@@ -135,7 +135,7 @@ Switching over is a clean install rather than an update, because the add-on's un
 2. Copy your configuration across (your key and any options).
 3. Start Nives, check it answers, then uninstall HomeMind PRO.
 
-Memories and conversation history don't carry over, so Nives starts fresh and learns you again. Your account and Cloud subscription are unaffected — they simply live at [nives.house](https://nives.house) now, and old `homemindpro.com` links redirect there.
+Memories and conversation history don't carry over, so Nives starts fresh and learns you again. Your account and Cloud balance are unaffected — they simply live at [nives.house](https://nives.house) now, and old `homemindpro.com` links redirect there.
 
 The [v2.0.0 changelog](nives/CHANGELOG.md) has the full detail.
 
@@ -150,7 +150,7 @@ The [v2.0.0 changelog](nives/CHANGELOG.md) has the full detail.
 Nives is in early access and we'd genuinely love to hear from you.
 
 - **Bugs / feature ideas:** open an [issue](https://github.com/hoornet/nives/issues).
-- **Cloud or subscription questions:** [nives.house](https://nives.house) or hello@nives.house.
+- **Cloud or billing questions:** [nives.house](https://nives.house) or hello@nives.house.
 
 ## License
 
