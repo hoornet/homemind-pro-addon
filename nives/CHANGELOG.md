@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.2
+
+- **Call her by name — even when the microphone doesn't.** Speech-to-text often turns "Nives" into a sound-alike: "News, what's the temperature in the living room?" The request itself always worked, but the name deserved better. When a voice request opens with one of these mishearings, Nives now recognizes it as her name, answers exactly as if it had been heard right, and never bothers you about it. Words in the middle of a sentence keep their ordinary meaning — asking to add knives to the shopping list is still about knives. Bundles server 0.15.2.
+
 ## 2.5.1
 
 - **Automations and service calls can now message Nives without a conversation id.** Calling `conversation.process` on the Nives agent without a `conversation_id` — the natural way to use it from an automation or script — was refused before the model ever saw it, with a misleading "couldn't reach the server" reply. It now just works. Voice and the Assist dialog were never affected. Thanks to @alcohen83 for the pinpoint report (#63).

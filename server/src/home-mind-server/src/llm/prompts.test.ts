@@ -263,3 +263,22 @@ describe("cache-friendly ordering (#66)", () => {
     }
   });
 });
+
+describe("misheard-name tolerance (voice)", () => {
+  it("is present in the voice prompt", () => {
+    const text = buildSystemPromptText([], true);
+    expect(text).toContain("YOUR NAME, MISHEARD");
+    expect(text).toContain('"News"');
+    expect(text).toContain("NEVER correct the user");
+  });
+
+  it("is absent from the regular (typed) prompt", () => {
+    const text = buildSystemPromptText([], false);
+    expect(text).not.toContain("YOUR NAME, MISHEARD");
+  });
+
+  it("survives a custom persona (instructions are not replaced)", () => {
+    const text = buildSystemPromptText([], true, "You are HAL 9000.");
+    expect(text).toContain("YOUR NAME, MISHEARD");
+  });
+});
