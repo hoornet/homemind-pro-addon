@@ -7,6 +7,9 @@ const ConfigSchema = z
     logLevel: z.enum(["debug", "info", "warn", "error"]).default("info"),
 
     // LLM
+    // cloud = key managed via nives.house; byok = user's own key. Set by the
+    // add-on's options-to-env.sh; standalone deployments default to byok.
+    llmMode: z.enum(["cloud", "byok"]).default("byok"),
     llmProvider: z.enum(["anthropic", "openai", "ollama"]).default("anthropic"),
     llmModel: z.string().default("claude-haiku-4-5-20251001"),
     anthropicApiKey: z.string().optional(),
@@ -93,6 +96,7 @@ export function loadConfig(): Config {
   const result = ConfigSchema.safeParse({
     port: process.env.PORT,
     logLevel: emptyToUndefined(process.env.LOG_LEVEL),
+    llmMode: emptyToUndefined(process.env.LLM_MODE),
     llmProvider: emptyToUndefined(process.env.LLM_PROVIDER),
     llmModel: emptyToUndefined(process.env.LLM_MODEL),
     anthropicApiKey: emptyToUndefined(process.env.ANTHROPIC_API_KEY),

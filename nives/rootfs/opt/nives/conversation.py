@@ -104,18 +104,20 @@ class NivesConversationAgent(ConversationEntity):
                 "persistent_notification",
                 "create",
                 {
-                    "title": "Nives — Usage Limit Reached",
+                    "title": "Nives — Out of balance",
                     "message": (
-                        "Your monthly usage allowance is depleted. "
-                        "Visit nives.house to renew or upgrade."
+                        "Nives has used up its available balance. "
+                        "Top up at nives.house — or, if you bring your own "
+                        "key, add credit with your provider — and Nives "
+                        "picks right back up."
                     ),
                     "notification_id": "nives_usage_limit",
                 },
             )
             intent_response = intent.IntentResponse(language=user_input.language)
             intent_response.async_set_speech(
-                "Your monthly token allowance is depleted. "
-                "Please visit nives.house to renew or upgrade."
+                "I'm out of balance. "
+                "Please top up at nives.house and I'll pick right back up."
             )
             return ConversationResult(
                 response=intent_response,

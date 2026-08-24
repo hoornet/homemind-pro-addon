@@ -50,6 +50,9 @@ CUSTOM_PROMPT=$(jq -r '.custom_prompt // ""' "$OPTIONS")
 LOG_LEVEL=$(jq -r '.log_level // "info"' "$OPTIONS")
 
 # --- LLM configuration ---
+# The server needs to know the mode itself (not just its consequences): the
+# balance watch runs only in cloud mode, where "top up at nives.house" is true.
+write_env "LLM_MODE" "$LLM_MODE"
 if [ "$LLM_MODE" = "cloud" ]; then
     # Cloud mode: user's managed OpenRouter key (created via Nives Cloud)
     write_env "LLM_PROVIDER" "openai"

@@ -48,6 +48,10 @@ Use Nives Cloud — a managed AI service with a monthly token budget. No API key
 | LLM Mode | Set to `cloud` |
 | Nives API Key | Your key from nives.house |
 
+### Balance heads-up
+
+Nives keeps an eye on your remaining balance. When about three days of typical use are left, it posts a Home Assistant notification inviting you to top up at [nives.house](https://nives.house); if the balance runs out, a clearer one says so. After a top-up both clear on their own — nothing to configure. This applies to Cloud mode only; keys you bring yourself are never watched.
+
 ---
 
 ## BYOK Mode (Bring Your Own Key)

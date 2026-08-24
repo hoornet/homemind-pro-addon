@@ -18,6 +18,7 @@ import { createRouter } from "./api/routes.js";
 import { createSttService } from "./stt/stt-service.js";
 import { createTtsService } from "./tts/tts-service.js";
 import { MemoryCleanupJob } from "./jobs/memory-cleanup.js";
+import { BalanceWatchJob } from "./jobs/balance-watch.js";
 
 // Load configuration
 const config = loadConfig();
@@ -154,10 +155,20 @@ Ready to accept requests at http://localhost:${config.port}
 const cleanupJob = new MemoryCleanupJob(memory, conversations, config.memoryCleanupIntervalHours);
 cleanupJob.start();
 
+// Watch the cloud balance (no-op in BYOK mode)
+const balanceJob = new BalanceWatchJob({
+  enabled: config.llmMode === "cloud" && config.llmProvider === "openai",
+  apiKey: config.openaiApiKey,
+  baseUrl: config.openaiBaseUrl,
+  ha,
+});
+balanceJob.start();
+
 // Graceful shutdown
 process.on("SIGTERM", () => {
   console.log("Shutting down...");
   cleanupJob.stop();
+  balanceJob.stop();
   conversations.close();
   memory.close();
   process.exit(0);
@@ -166,6 +177,7 @@ process.on("SIGTERM", () => {
 process.on("SIGINT", () => {
   console.log("Shutting down...");
   cleanupJob.stop();
+  balanceJob.stop();
   conversations.close();
   memory.close();
   process.exit(0);

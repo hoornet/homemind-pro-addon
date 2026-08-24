@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.0
+
+- **Nives now warns you before your balance runs out.** If you use Nives with a key from nives.house, the add-on keeps an eye on the remaining balance and, when about three days of typical use are left, posts a Home Assistant notification inviting you to top up. If the balance does run out, a clearer notification says so. Once you top up, both clear on their own and Nives carries on where it left off — nothing to configure, nothing to restart. If you bring your own key, nothing changes: Nives only watches nives.house balances.
+- **Nives says it plainly when it can't answer for lack of balance.** If a reply is refused because the balance is used up before the warning could reach you, Nives now tells you it's out of balance right in the conversation and points you to nives.house — or to your own provider's account, if you bring your own key. Bundles server 0.15.0.
+
 ## 2.4.24
 
 - **Bring-your-own-key now works with OpenAI's newest models.** Pointing Nives at GPT-5 or the o-series with your own OpenAI key failed before the model ever got a chance to answer: those models renamed the setting that limits how long a reply may be, and Nives was still sending the previous name. Nives now asks the endpoint which name it expects and remembers the answer, so the setting arrives correctly everywhere — OpenAI's newest models, OpenAI's older ones, and every other OpenAI-compatible endpoint Nives supports, local models included. There is nothing to configure, and setups that already worked are untouched. Thanks to @Kristofer-KNE for the report (#60).
