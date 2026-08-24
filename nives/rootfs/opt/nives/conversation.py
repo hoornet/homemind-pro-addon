@@ -123,6 +123,21 @@ class NivesConversationAgent(ConversationEntity):
                 response=intent_response,
                 conversation_id=conversation_id,
             )
+        except aiohttp.ClientResponseError as err:
+            # The server ANSWERED — with an error status. Saying "couldn't
+            # reach the server" here sends people debugging connectivity when
+            # the log already names the real problem (#63, and #1 before it).
+            _LOGGER.error("Nives server returned an error: %s", err.message)
+            intent_response = intent.IntentResponse(language=user_input.language)
+            intent_response.async_set_error(
+                intent.IntentResponseErrorCode.UNKNOWN,
+                f"Sorry, the Nives server returned an error (HTTP {err.status}). "
+                "The add-on log has the details.",
+            )
+            return ConversationResult(
+                response=intent_response,
+                conversation_id=conversation_id,
+            )
         except (aiohttp.ClientError, TimeoutError) as err:
             _LOGGER.error("Error calling Nives API: %s", err)
             intent_response = intent.IntentResponse(language=user_input.language)
@@ -178,9 +193,13 @@ class NivesConversationAgent(ConversationEntity):
         payload: dict = {
             "message": message,
             "userId": user_id,
-            "conversationId": conversation_id,
             "isVoice": is_voice,
         }
+        # Only send the key when there is a conversation in flight. A service
+        # call without a conversation_id would otherwise put an explicit null
+        # on the wire, which request validation rejects (#63).
+        if conversation_id:
+            payload["conversationId"] = conversation_id
         # The Assist pipeline's language (e.g. "sl", "en"). Without it the model
         # has no anchor at all and infers the language from context that is
         # soaked in native-language entity names — which is how an English
@@ -208,11 +227,15 @@ class NivesConversationAgent(ConversationEntity):
             if response.status == 402:
                 raise UsageLimitError()
             if response.status != 200:
+                # Capture the body: the status alone says "the server
+                # objected", the body says WHY (validation details, error
+                # codes) — and this log line is all a bug report will carry.
+                body = (await response.text())[:300]
                 raise aiohttp.ClientResponseError(
                     response.request_info,
                     response.history,
                     status=response.status,
-                    message=f"API error {response.status}",
+                    message=f"API error {response.status}: {body}",
                 )
             data = await response.json()
             response_text = data.get("response")

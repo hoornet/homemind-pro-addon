@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.5.1
+
+- **Automations and service calls can now message Nives without a conversation id.** Calling `conversation.process` on the Nives agent without a `conversation_id` — the natural way to use it from an automation or script — was refused before the model ever saw it, with a misleading "couldn't reach the server" reply. It now just works. Voice and the Assist dialog were never affected. Thanks to @alcohen83 for the pinpoint report (#63).
+- **Error replies now say who actually failed.** When the Nives server answers a request with an error, the reply now says so — with the HTTP status — instead of suggesting the server was unreachable, and the add-on log carries the server's own explanation of what it objected to. Connection problems still say "couldn't reach".
+- **Repeat turns got cheaper: the unchanging parts of the prompt can now be cached.** With every message, Nives sends the model your home's layout and device capabilities so it always knows your home. Those now sit ahead of the parts that change each turn (timestamps, retrieved memories), so providers that cache prompts can reuse them between turns instead of billing them again on every "turn off the kitchen light". Measured on an Anthropic key with a mid-size home, repeat turns went from about a third of the prompt cached to ~99% — same content, same answers, noticeably cheaper. The bigger your home, the more this saves. Thanks again to @alcohen83 (#66). Bundles server 0.15.1.
+
 ## 2.5.0
 
 - **Nives now warns you before your balance runs out.** If you use Nives with a key from nives.house, the add-on keeps an eye on the remaining balance and, when about three days of typical use are left, posts a Home Assistant notification inviting you to top up. If the balance does run out, a clearer notification says so. Once you top up, both clear on their own and Nives carries on where it left off — nothing to configure, nothing to restart. If you bring your own key, nothing changes: Nives only watches nives.house balances.
