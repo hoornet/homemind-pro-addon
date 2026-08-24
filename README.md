@@ -87,6 +87,12 @@ A few honest notes so it goes smoothly:
 
 You need Home Assistant OS or Supervised (the add-on store), on amd64 or aarch64 — a Raspberry Pi 4/5 is fine. Running HA in bare Docker or Core, with no add-on store? Use [home-mind](https://github.com/hoornet/home-mind) instead; it's the same engine in Docker Compose form.
 
+One click adds the repository to your Home Assistant:
+
+[![Open your Home Assistant instance and show the add add-on repository dialog with the Nives repository pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fhoornet%2Fnives)
+
+Or manually:
+
 1. In Home Assistant, open **Settings → Add-ons → Add-on Store**.
 2. Click the **⋮** menu (top-right) → **Repositories**.
 3. Add this URL: `https://github.com/hoornet/nives`

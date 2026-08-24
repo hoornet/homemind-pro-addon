@@ -9,8 +9,9 @@ AI assistant with cognitive memory for Home Assistant. Talk to your smart home n
 1. Install this add-on
 2. Choose your LLM mode: **Cloud** or **BYOK** (see sections below)
 3. Start the add-on
-4. Go to **Settings > Voice assistants** and select **Nives** as your conversation agent
-5. Talk to your home via Assist!
+4. Restart Home Assistant once when Nives asks (a notification on first install; after updates, a one-click repair under **Settings > Repairs**) — this loads the companion integration
+5. Go to **Settings > Voice assistants** and select **Nives** as your conversation agent
+6. Talk to your home via Assist!
 
 ## How It Works
 
