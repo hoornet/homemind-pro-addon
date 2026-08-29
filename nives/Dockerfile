@@ -56,14 +56,20 @@ FROM node:22-bookworm-slim AS builder
 WORKDIR /build
 
 # Copy vendored server source (no external git clone needed)
+# --ignore-scripts: better-sqlite3 13+ ships N-API prebuilds inside the package
+# and needs no install script, but npm ci still invokes node-gyp for it
+# (WiseLibs/better-sqlite3#1516) and this image carries no Python/toolchain.
+# Nothing else in the tree needs an install script; the require() below fails
+# the build if a future dependency ever does.
 COPY server/src/home-mind-server/package*.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 COPY server/src/home-mind-server/src ./src
 COPY server/src/home-mind-server/tsconfig.json ./
 RUN npx tsc
 
 # Production dependencies only
-RUN rm -rf node_modules && npm ci --omit=dev
+RUN rm -rf node_modules && npm ci --omit=dev --ignore-scripts \
+    && node -e "require('better-sqlite3')(':memory:').prepare('select 1 as ok').get()"
 
 # -------------------------------------------------------------------
 # Stage 3: Runtime — Ubuntu 24.04 + s6-overlay + Node.js + Shodh
