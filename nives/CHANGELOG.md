@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.4
+
+- **Nives keeps to your language, even on one-word messages.** A quick "tv", a number, a bare "ok" — a message that short doesn't say what language you're speaking, so Nives now treats it that way: she keeps answering in the language of the conversation, in a home where devices and rooms may be named in another language entirely. The moment you genuinely switch languages, she follows.
+- **Short follow-ups stay on topic.** Ask about the TV, then follow with "what about now?" — Nives re-checks the TV and gives you the fresh answer, rather than asking which of the evening's topics you meant. She'll only ask when her last reply really did cover several things at once. Bundles server 0.15.3.
+
 ## 2.5.3
 
 - **Routine dependency housekeeping.** The database library that keeps your conversation history moves to its next major version — the update set aside in 2.4.20 now ships with everything Nives needs built in, and it brings a newer SQLite along. Also updated: the SDKs the server uses to talk to AI providers, and a few build-time tools. Nothing changes in how Nives works.
