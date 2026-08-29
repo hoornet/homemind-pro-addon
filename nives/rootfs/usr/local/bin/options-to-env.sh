@@ -42,6 +42,7 @@ API_TOKEN=$(cat /data/.api_token)
 # Read options (nested cloud/byok structure)
 LLM_MODE=$(jq -r '.llm_mode // "cloud"' "$OPTIONS")
 PROXY_KEY=$(jq -r '.cloud.api_key // ""' "$OPTIONS")
+CLOUD_TRANSCRIPTION=$(jq -r '.cloud.transcription // false' "$OPTIONS")
 LLM_PROVIDER=$(jq -r '.byok.provider // "anthropic"' "$OPTIONS")
 LLM_API_KEY=$(jq -r '.byok.api_key // ""' "$OPTIONS")
 LLM_MODEL=$(jq -r '.byok.model // ""' "$OPTIONS")
@@ -64,16 +65,34 @@ if [ "$LLM_MODE" = "cloud" ]; then
     # with no add-on update. Bounded + failure-safe: falls back to a working
     # default if the cloud is briefly unreachable (chat still goes direct to OR).
     CLOUD_MODEL="@preset/nives-standard"
+    CLOUD_STT_MODEL=""
     if [ -n "$PROXY_KEY" ]; then
-        RESOLVED=$(curl -fsS --max-time 8 -H "Authorization: Bearer $PROXY_KEY" \
-            "https://nives.house/api/addon/config" 2>/dev/null \
-            | jq -r '.model // ""' 2>/dev/null || true)
+        CLOUD_CFG=$(curl -fsS --max-time 8 -H "Authorization: Bearer $PROXY_KEY" \
+            "https://nives.house/api/addon/config" 2>/dev/null || true)
+        RESOLVED=$(printf '%s' "$CLOUD_CFG" | jq -r '.model // ""' 2>/dev/null || true)
         case "$RESOLVED" in
             @preset/nives-*) CLOUD_MODEL="$RESOLVED" ;;
         esac
+        # Optional and forward-looking: lets the transcription model be swapped
+        # server-side later without an add-on release, the same way the chat
+        # lineup already is. Absent today, which is why there is a default.
+        CLOUD_STT_MODEL=$(printf '%s' "$CLOUD_CFG" | jq -r '.stt_model // ""' 2>/dev/null || true)
         echo "[init] cloud model: ${CLOUD_MODEL}"
     fi
     write_env "LLM_MODEL" "$CLOUD_MODEL"
+
+    # --- Optional cloud transcription (opt-in, default off) ---
+    # Listening is billed to the same balance as chat, so it stays off until
+    # the user asks for it. When off we write nothing: the server's default
+    # STT_PROVIDER is "none" and /api/stt answers 501, which is what tells the
+    # integration not to offer a speech-to-text entity at all.
+    if [ "$CLOUD_TRANSCRIPTION" = "true" ] && [ -n "$PROXY_KEY" ]; then
+        write_env "STT_PROVIDER" "openai"
+        write_env "STT_API_KEY" "$PROXY_KEY"
+        write_env "STT_BASE_URL" "https://openrouter.ai/api/v1"
+        write_env "STT_MODEL" "${CLOUD_STT_MODEL:-openai/whisper-large-v3}"
+        echo "[init] cloud transcription: on (${CLOUD_STT_MODEL:-openai/whisper-large-v3})"
+    fi
 else
     # BYOK mode: user provides their own API key
     write_env "LLM_PROVIDER" "$LLM_PROVIDER"

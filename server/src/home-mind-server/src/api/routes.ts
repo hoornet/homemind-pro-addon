@@ -435,6 +435,11 @@ export function createRouter(
       timestamp: new Date().toISOString(),
       version,
       memoryBackend,
+      // Capabilities the caller can act on. The HA integration reads `stt` to
+      // decide whether to register a speech-to-text entity at all — an entity
+      // that would answer every request with a 501 is worse than no entity,
+      // because it still appears as a choice in the Assist pipeline.
+      stt: Boolean(stt),
     });
   });
 

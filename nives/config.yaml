@@ -1,5 +1,5 @@
 name: "Nives"
-version: "2.5.4"
+version: "2.5.5"
 slug: "nives"
 description: "AI assistant with cognitive memory for Home Assistant"
 url: "https://github.com/hoornet/nives"
@@ -27,6 +27,7 @@ options:
   llm_mode: "cloud"
   cloud:
     api_key: ""
+    transcription: false
   byok:
     provider: "anthropic"
     api_key: ""
@@ -38,6 +39,7 @@ schema:
   llm_mode: "list(cloud|byok)"
   cloud:
     api_key: "str?"
+    transcription: "bool?"
   byok:
     provider: "list(anthropic|openai|openrouter|ollama)?"
     api_key: "str?"

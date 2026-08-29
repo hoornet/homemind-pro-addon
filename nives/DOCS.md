@@ -48,6 +48,35 @@ Use Nives Cloud — a managed AI service on a prepaid balance. Buy a ticket, use
 |--------|-------------|
 | LLM Mode | Set to `cloud` |
 | Nives API Key | Your key from nives.house |
+| Transcription | Off by default. Turn it on to let Nives do the listening too — see below |
+
+### Let Nives do the listening (optional)
+
+Home Assistant needs a speech-to-text engine to turn what you say into words
+before Nives can answer. The engines that run on your own box are excellent for
+English, but on smaller hardware they tend to struggle with names — "Nives"
+especially — and with languages other than English.
+
+Turn **Transcription** on and restart the add-on. Within a couple of minutes
+Nives appears as a **Speech-to-text** choice in your Assist pipeline (Settings →
+Voice assistants), using high-quality transcription paid from the same balance
+as your conversations. (In a hurry? Reloading the Nives integration under
+Settings → Devices & services makes it appear at once.) Listening is
+inexpensive next to thinking: a typical spoken command costs a small fraction of
+the reply it produces. Nives is told which language your pipeline speaks, so
+short commands in your own language are understood rather than guessed at.
+
+> **What this changes about your privacy.** With Transcription off, only your
+> written request and your home's device list go to the cloud. With it on, the
+> audio of what you say is sent to be transcribed as well. That is why it is
+> off until you choose it. Everything else is unchanged, and you can turn it
+> back off at any time — a couple of minutes after the add-on restarts, Nives
+> removes itself from the Speech-to-text list and your pipeline falls back to
+> the engine it used before.
+
+Prefer to keep audio on your own hardware? Leave this off and use a local engine
+in the pipeline; Nives works exactly the same, it just receives the words rather
+than the sound.
 
 ### Balance heads-up
 

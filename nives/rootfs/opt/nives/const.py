@@ -16,6 +16,41 @@ DEFAULT_TIMEOUT = 120  # Claude with tool use can take 60+ seconds
 
 API_CHAT_ENDPOINT = "/api/chat"
 API_HEALTH_ENDPOINT = "/api/health"
+API_STT_ENDPOINT = "/api/stt"
+
+# Transcription is quick compared with a tool-using chat turn, but it now sits
+# in front of one — the user is waiting on both — so this stays far below
+# DEFAULT_TIMEOUT and fails fast enough to retry by just speaking again.
+STT_TIMEOUT = 45
+
+# A spoken command is seconds long; anything approaching this is a stuck
+# microphone rather than speech, and uploading it would bill the user for a
+# recording nobody meant to make. 16-bit 16 kHz mono runs 32 KB/s, so this is
+# a little over five minutes.
+STT_MAX_AUDIO_BYTES = 10 * 1024 * 1024
+
+# Languages the Whisper-family transcription models understand, as the bare
+# ISO-639-1 codes Assist matches against. Kept broad on purpose: the model is
+# chosen server-side and every one of these is a language somebody's house
+# might be spoken to in.
+STT_LANGUAGES = [
+    "af", "am", "ar", "as", "az", "ba", "be", "bg", "bn", "bo", "br", "bs",
+    "ca", "cs", "cy", "da", "de", "el", "en", "es", "et", "eu", "fa", "fi",
+    "fo", "fr", "gl", "gu", "ha", "haw", "he", "hi", "hr", "ht", "hu", "hy",
+    "id", "is", "it", "ja", "jw", "ka", "kk", "km", "kn", "ko", "la", "lb",
+    "ln", "lo", "lt", "lv", "mg", "mi", "mk", "ml", "mn", "mr", "ms", "mt",
+    "my", "ne", "nl", "nn", "no", "oc", "pa", "pl", "ps", "pt", "ro", "ru",
+    "sa", "sd", "si", "sk", "sl", "sn", "so", "sq", "sr", "su", "sv", "sw",
+    "ta", "te", "tg", "th", "tk", "tl", "tr", "tt", "uk", "ur", "uz", "vi",
+    "yi", "yo", "yue", "zh",
+    # Home Assistant's own code for Norwegian, translated on the way out — see
+    # LANGUAGE_ALIASES. Advertising it is what lets Assist pick Nives at all
+    # for a Norwegian pipeline; the match is exact, with no fallback to "no".
+    "nb",
+]
+
+# Home Assistant language codes that the transcription model spells otherwise.
+LANGUAGE_ALIASES = {"nb": "no"}
 
 # Where the add-on leaves its API token for us, relative to the Home Assistant
 # config directory. The add-on has config:rw, so it writes into the very

@@ -11,6 +11,16 @@ configuration:
       name: Nives API Key
       description: >-
         Your Nives API key from nives.house. Required when LLM Mode is "cloud".
+    transcription:
+      name: Transcription (let Nives do the listening)
+      description: >-
+        Off by default. When on, Nives offers itself as a Speech-to-text choice
+        in your Assist pipeline and transcribes what you say, paid from your
+        Nives balance — better with names and with languages other than English
+        than engines running on your own box. Note this sends the audio of your
+        spoken requests to be transcribed; with it off, only your written
+        request goes out. Cloud mode only. After changing this, restart the
+        add-on; Nives updates Home Assistant on its own within a few minutes.
   byok:
     name: "Bring Your Own Key (BYOK)"
     description: >-

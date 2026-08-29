@@ -4,19 +4,23 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
+
+import aiohttp
 
 from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.loader import async_get_integration
 
 from .const import (
+    API_HEALTH_ENDPOINT,
     CONF_API_TOKEN,
     CONF_API_URL,
     CONF_USER_ID,
@@ -36,6 +40,12 @@ _LOGGER = logging.getLogger(__name__)
 # notices. Five minutes keeps the repair reasonably prompt after an add-on
 # update without measurable cost (one tiny file read).
 UPDATE_CHECK_INTERVAL = timedelta(minutes=5)
+
+# How often to re-ask the server whether it is set up to transcribe. Two
+# minutes keeps a toggled setting — and a server that was still starting when
+# Home Assistant loaded this entry — from stranding the user for long, at the
+# cost of one small request against a service running on the same machine.
+CAPABILITY_CHECK_INTERVAL = timedelta(minutes=2)
 
 
 def _read_token_file(path: str) -> str | None:
@@ -142,9 +152,40 @@ async def _async_setup_update_watch(hass: HomeAssistant, entry: ConfigEntry) -> 
     hass.async_create_task(_async_check())
 
 
-def _get_platforms() -> list[Platform]:
+async def _async_setup_capability_watch(
+    hass: HomeAssistant, entry: NivesConfigEntry
+) -> None:
+    """Reload the entry when the server's transcription setting changes.
+
+    Which platforms this entry runs is decided once, at setup, from a server
+    that may not have been up yet — and the user can switch transcription on or
+    off in the add-on at any time, which restarts the add-on but never touches
+    this config entry. Without this watch both directions strand the user:
+    switching on does nothing until a manual reload, switching off leaves a
+    speech-to-text entity selected in their pipeline that answers every
+    utterance with an error, and a server that was still booting when Home
+    Assistant started loses the entity for the whole session.
+    """
+
+    async def _async_check(_now=None) -> None:
+        data = entry.runtime_data
+        if (await _async_stt_enabled(hass, data.api_url)) == (
+            Platform.STT in data.platforms
+        ):
+            return
+        _LOGGER.info("Nives transcription availability changed; reloading")
+        hass.config_entries.async_schedule_reload(entry.entry_id)
+
+    entry.async_on_unload(
+        async_track_time_interval(hass, _async_check, CAPABILITY_CHECK_INTERVAL)
+    )
+
+
+def _get_platforms(stt_enabled: bool = False) -> list[Platform]:
     """Platforms to set up. AI Task is added only on HA versions that have it
-    (2025.7+), so older cores keep the conversation agent and just skip it."""
+    (2025.7+), so older cores keep the conversation agent and just skip it.
+    Speech-to-text is added only when the server is actually configured to
+    transcribe (see _async_stt_enabled)."""
     platforms: list[Platform] = [Platform.CONVERSATION]
     ai_task_platform = getattr(Platform, "AI_TASK", None)
     if ai_task_platform is not None:
@@ -154,7 +195,32 @@ def _get_platforms() -> list[Platform]:
             platforms.append(ai_task_platform)
         except ImportError:
             _LOGGER.info("ai_task unavailable on this HA version; skipping AI Task entity")
+    if stt_enabled:
+        platforms.append(Platform.STT)
     return platforms
+
+
+async def _async_stt_enabled(hass: HomeAssistant, api_url: str) -> bool:
+    """Ask the server whether it is set up to transcribe.
+
+    Health is public, so this needs no token. Any failure answers "no": the
+    add-on has to be reachable for the integration to work at all, and a
+    speech-to-text entity that cannot transcribe is worse than none, because
+    it still offers itself as a choice in the Assist pipeline.
+    """
+    session = async_get_clientsession(hass)
+    try:
+        async with session.get(
+            f"{api_url}{API_HEALTH_ENDPOINT}",
+            timeout=aiohttp.ClientTimeout(total=10),
+        ) as response:
+            if response.status != 200:
+                return False
+            body = await response.json()
+    except (aiohttp.ClientError, TimeoutError, ValueError) as err:
+        _LOGGER.debug("Could not read server capabilities: %s", err)
+        return False
+    return bool(body.get("stt"))
 
 
 @dataclass
@@ -164,6 +230,10 @@ class NivesData:
     api_url: str
     api_token: str | None
     user_id: str
+    # The platforms this entry actually set up. Recorded rather than recomputed
+    # so unload takes down exactly what setup brought up, even if the server's
+    # answer about transcription has changed in between.
+    platforms: list[Platform] = field(default_factory=list)
 
 
 type NivesConfigEntry = ConfigEntry[NivesData]
@@ -171,14 +241,18 @@ type NivesConfigEntry = ConfigEntry[NivesData]
 
 async def async_setup_entry(hass: HomeAssistant, entry: NivesConfigEntry) -> bool:
     """Set up Nives from a config entry."""
+    api_url = entry.data.get(CONF_API_URL, "").rstrip("/")
+    platforms = _get_platforms(await _async_stt_enabled(hass, api_url))
     entry.runtime_data = NivesData(
-        api_url=entry.data.get(CONF_API_URL, "").rstrip("/"),
+        api_url=api_url,
         api_token=await _async_resolve_token(hass, entry),
         user_id=entry.data.get(CONF_USER_ID, DEFAULT_USER_ID),
+        platforms=platforms,
     )
-    await hass.config_entries.async_forward_entry_setups(entry, _get_platforms())
+    await hass.config_entries.async_forward_entry_setups(entry, platforms)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await _async_setup_update_watch(hass, entry)
+    await _async_setup_capability_watch(hass, entry)
     return True
 
 
@@ -189,4 +263,5 @@ async def _async_update_listener(hass: HomeAssistant, entry: NivesConfigEntry) -
 
 async def async_unload_entry(hass: HomeAssistant, entry: NivesConfigEntry) -> bool:
     """Unload a config entry."""
-    return await hass.config_entries.async_unload_platforms(entry, _get_platforms())
+    platforms = getattr(entry.runtime_data, "platforms", None) or _get_platforms()
+    return await hass.config_entries.async_unload_platforms(entry, platforms)

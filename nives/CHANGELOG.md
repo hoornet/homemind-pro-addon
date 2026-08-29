@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.5
+
+- **Nives can do the listening now, too.** Home Assistant needs a speech-to-text engine to turn what you say into words before Nives can answer, and the engines that run on your own box tend to struggle with names — "Nives" especially — and with languages other than English. Switch on **Transcription** in the add-on's Cloud settings and Nives offers itself as a Speech-to-text choice in your Assist pipeline, transcribing what you say from the same balance your conversations already use. Listening costs a small fraction of what thinking does. Nives is told which language your pipeline speaks, so a short command in your own language is understood rather than guessed at.
+- Transcription is **off unless you switch it on**, and the reason is worth stating plainly: with it off, only your written request goes to the cloud; with it on, the audio of what you say is sent to be transcribed as well. Turn it back off and Nives steps out of the Speech-to-text list on its own, handing your pipeline back to whichever engine it used before. Bundles server 0.15.4.
+
 ## 2.5.4
 
 - **Nives keeps to your language, even on one-word messages.** A quick "tv", a number, a bare "ok" — a message that short doesn't say what language you're speaking, so Nives now treats it that way: she keeps answering in the language of the conversation, in a home where devices and rooms may be named in another language entirely. The moment you genuinely switch languages, she follows.
