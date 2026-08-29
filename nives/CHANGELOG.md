@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.3
+
+- **Routine dependency housekeeping.** The database library that keeps your conversation history moves to its next major version — the update set aside in 2.4.20 now ships with everything Nives needs built in, and it brings a newer SQLite along. Also updated: the SDKs the server uses to talk to AI providers, and a few build-time tools. Nothing changes in how Nives works.
+
 ## 2.5.2
 
 - **Call her by name — even when the microphone doesn't.** Speech-to-text often turns "Nives" into a sound-alike: "News, what's the temperature in the living room?" The request itself always worked, but the name deserved better. When a voice request opens with one of these mishearings, Nives now recognizes it as her name, answers exactly as if it had been heard right, and never bothers you about it. Words in the middle of a sentence keep their ordinary meaning — asking to add knives to the shopping list is still about knives. Bundles server 0.15.2.
