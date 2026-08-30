@@ -25,6 +25,7 @@ Nives bundles two services in one add-on:
 - **Answer & control** — ask about any sensor or device, and control them by voice or text ("dim the lounge", "is the bedroom warm?").
 - **Remember** — tell it your preferences, baselines, and nicknames once; it uses them across every conversation.
 - **Create & manage automations** — ask it to set up, change, list, or delete automations ("turn the porch light on at sunset every day"). It always shows what it will do and waits for your confirmation, and names its automations with a `Nives:` prefix so you can find them under Settings → Automations.
+- **Be someone else entirely** — the **Custom Prompt** option replaces her personality outright, so the assistant answering you is whoever you describe. Leave it empty and you get Nives: helpful, plain-spoken, and aware of her own name. Write *"You are HAL 9000, the calm and precise computer from 2001"* and that is who answers — including, inevitably, when you ask her to open the pod bay doors. It applies after the add-on restarts, and everything else — memory, automations, your devices — carries on unchanged underneath.
 - **Power your automations (AI Task)** — Nives registers an `ai_task` entity, so any automation can call `ai_task.generate_data` to get an answer or structured data reasoned with your home's context. With a vision-capable model it can also analyze an **image attachment** (e.g. a camera snapshot) — useful for smarter, low-false-alarm camera/doorbell notifications.
 
 ---
