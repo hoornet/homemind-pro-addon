@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.6
+
+- **Follow-up questions keep their place in the conversation.** When something other than Home Assistant's own voice pipeline talks to Nives, such as a script, an automation, or a desktop client using the conversation API directly, every message now continues the same conversation instead of beginning a new one. Answering "yes" to a question Nives has just asked now does what you expect, and the two step confirmation for creating an automation can be completed from those callers as well. Voice and the Assist dialog always supplied a conversation of their own and are unchanged.
+
 ## 2.5.5
 
 - **Nives can do the listening now, too.** Home Assistant needs a speech-to-text engine to turn what you say into words before Nives can answer, and the engines that run on your own box tend to struggle with names — "Nives" especially — and with languages other than English. Switch on **Transcription** in the add-on's Cloud settings and Nives offers itself as a Speech-to-text choice in your Assist pipeline, transcribing what you say from the same balance your conversations already use. Listening costs a small fraction of what thinking does. Nives is told which language your pipeline speaks, so a short command in your own language is understood rather than guessed at.

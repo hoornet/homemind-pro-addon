@@ -19,6 +19,15 @@ from homeassistant.helpers import device_registry as dr, intent
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+try:
+    from homeassistant.util.ulid import ulid_now
+except ImportError:  # very old cores
+    from uuid import uuid4
+
+    def ulid_now() -> str:
+        """Fallback id for cores without the ulid helper."""
+        return uuid4().hex
+
 from . import NivesConfigEntry
 from .const import (
     API_CHAT_ENDPOINT,
@@ -78,7 +87,14 @@ class NivesConversationAgent(ConversationEntity):
         if user_input.context and user_input.context.user_id:
             user_id = str(user_input.context.user_id)
 
-        conversation_id = user_input.conversation_id
+        # Mint an id when the caller has none. Home Assistant's own Assist
+        # pipeline always supplies one, so this only ever bit the callers that
+        # do not: the REST API, a script, an automation, a desktop client.
+        # Echoing None straight back left them nothing to send on the next
+        # turn, so every message began a brand new conversation — follow-ups
+        # lost their subject, and the two-step automation confirmation could
+        # never be completed, because the second turn had forgotten the first.
+        conversation_id = user_input.conversation_id or ulid_now()
 
         # Voice satellites (Voice PE etc.) always carry a device_id; the
         # dashboard/app Assist dialog does not. The server uses this to switch
