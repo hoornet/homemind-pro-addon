@@ -392,7 +392,23 @@ describe("OpenAIChatEngine", () => {
     expect(createCall.max_tokens).toBe(500);
   });
 
-  it("uses max_tokens 2048 for non-voice mode", async () => {
+  it("honours a configured output cap, which OPENAI_MAX_TOKENS never reached before", async () => {
+    // The documented setting only ever reached the fact extractor, so a user
+    // whose replies were being truncated could set it and see no change.
+    config.maxOutputTokens = 8000;
+    mockCreate.mockResolvedValue(
+      makeStream([
+        { choices: [{ delta: { content: "Hi!" }, finish_reason: null }] },
+        { choices: [{ delta: {}, finish_reason: "stop" }] },
+      ])
+    );
+
+    await engine.chat({ message: "Hello", userId: "user-1" });
+
+    expect(mockCreate.mock.calls[0][0].max_tokens).toBe(8000);
+  });
+
+  it("uses max_tokens 4096 for non-voice mode", async () => {
     mockCreate.mockResolvedValue(
       makeStream([
         { choices: [{ delta: { content: "Long" }, finish_reason: null }] },
@@ -403,7 +419,7 @@ describe("OpenAIChatEngine", () => {
     await engine.chat({ message: "Hi", userId: "user-1" });
 
     const createCall = mockCreate.mock.calls[0][0];
-    expect(createCall.max_tokens).toBe(2048);
+    expect(createCall.max_tokens).toBe(4096);
   });
 
   it("retries with max_completion_tokens when the model rejects max_tokens (issue #60)", async () => {
@@ -423,9 +439,9 @@ describe("OpenAIChatEngine", () => {
     const result = await engine.chat({ message: "Hi", userId: "user-1" });
 
     expect(result.response).toBe("Hello");
-    expect(mockCreate.mock.calls[0][0].max_tokens).toBe(2048);
+    expect(mockCreate.mock.calls[0][0].max_tokens).toBe(4096);
     expect(mockCreate.mock.calls[0][0].max_completion_tokens).toBeUndefined();
-    expect(mockCreate.mock.calls[1][0].max_completion_tokens).toBe(2048);
+    expect(mockCreate.mock.calls[1][0].max_completion_tokens).toBe(4096);
     expect(mockCreate.mock.calls[1][0].max_tokens).toBeUndefined();
   });
 

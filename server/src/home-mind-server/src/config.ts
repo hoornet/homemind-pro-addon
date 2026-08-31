@@ -22,6 +22,10 @@ const ConfigSchema = z
     // JSON mode is requested; some local models need a larger output budget.
     openaiResponseFormat: z.enum(["json_object"]).optional(),
     openaiMaxTokens: z.coerce.number().int().positive().optional(),
+    // Ceiling on a single reply, for both engines. Reasoning models spend this
+    // budget thinking before they answer, so a tight cap can truncate a reply
+    // that had barely started.
+    maxOutputTokens: z.coerce.number().int().positive().optional(),
 
     // Ollama
     ollamaBaseUrl: z.string().url().optional(),
@@ -104,6 +108,10 @@ export function loadConfig(): Config {
     openaiBaseUrl: emptyToUndefined(process.env.OPENAI_BASE_URL),
     openaiResponseFormat: emptyToUndefined(process.env.OPENAI_RESPONSE_FORMAT),
     openaiMaxTokens: emptyToUndefined(process.env.OPENAI_MAX_TOKENS),
+    // OPENAI_MAX_TOKENS was documented as the way to raise this and only ever
+    // reached the fact extractor, so it is honoured here too rather than
+    // quietly ignored.
+    maxOutputTokens: emptyToUndefined(process.env.MAX_OUTPUT_TOKENS ?? process.env.OPENAI_MAX_TOKENS),
     ollamaBaseUrl: emptyToUndefined(process.env.OLLAMA_BASE_URL),
     haUrl: process.env.HA_URL,
     haToken: process.env.HA_TOKEN,

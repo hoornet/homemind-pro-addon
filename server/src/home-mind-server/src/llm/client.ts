@@ -225,6 +225,17 @@ export class LLMClient implements IChatEngine {
    * Calls onChunk with text deltas as they arrive.
    * Uses prompt caching for the static system prompt.
    */
+
+  /**
+   * Ceiling on one reply. A spoken answer stays short because it is read out
+   * loud; a written one gets room to actually finish, since 2048 truncated
+   * mid-analysis often enough to be reported. Reasoning models spend this same
+   * budget thinking, which is why the written default is not tighter.
+   */
+  private maxOutputTokens(isVoice: boolean): number {
+    return this.config.maxOutputTokens ?? (isVoice ? 500 : 4096);
+  }
+
   private async streamMessage(
     systemPrompt: CachedSystemPrompt,
     messages: Anthropic.MessageParam[],
@@ -234,7 +245,7 @@ export class LLMClient implements IChatEngine {
   ): Promise<Anthropic.Message> {
     const stream = this.anthropic.messages.stream({
       model: this.config.llmModel,
-      max_tokens: isVoice ? 500 : 2048,
+      max_tokens: this.maxOutputTokens(isVoice),
       system: systemPrompt,
       tools: HA_TOOLS,
       // Keep the tool list (history references it) but stop further calls.

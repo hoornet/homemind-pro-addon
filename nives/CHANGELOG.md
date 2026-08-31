@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.7
+
+- **Longer answers are no longer cut off mid-sentence.** Ask Nives to compare a few sensors or explain what it makes of an overnight reading and the reply can run long. The ceiling on a single written answer has been doubled, so those answers finish. Spoken answers are unchanged and stay short, because they are read out loud. If you run your own model and want a different ceiling, `OPENAI_MAX_TOKENS` now applies to conversations as well as to memory extraction, which is what it always said it did. Bundles server 0.15.5.
+
 ## 2.5.6
 
 - **Follow-up questions keep their place in the conversation.** When something other than Home Assistant's own voice pipeline talks to Nives, such as a script, an automation, or a desktop client using the conversation API directly, every message now continues the same conversation instead of beginning a new one. Answering "yes" to a question Nives has just asked now does what you expect, and the two step confirmation for creating an automation can be completed from those callers as well. Voice and the Assist dialog always supplied a conversation of their own and are unchanged.

@@ -267,6 +267,17 @@ export class OpenAIChatEngine implements IChatEngine {
     };
   }
 
+
+  /**
+   * Ceiling on one reply. A spoken answer stays short because it is read out
+   * loud; a written one gets room to actually finish, since 2048 truncated
+   * mid-analysis often enough to be reported. Reasoning models spend this same
+   * budget thinking, which is why the written default is not tighter.
+   */
+  private maxOutputTokens(isVoice: boolean): number {
+    return this.config.maxOutputTokens ?? (isVoice ? 500 : 4096);
+  }
+
   private async streamCompletion(
     messages: OpenAI.ChatCompletionMessageParam[],
     isVoice: boolean,
@@ -279,7 +290,7 @@ export class OpenAIChatEngine implements IChatEngine {
   }> {
     const stream = await withTokenCap(
       this.config.llmModel,
-      isVoice ? 500 : 2048,
+      this.maxOutputTokens(isVoice),
       (cap) =>
         this.client.chat.completions.create({
           model: this.config.llmModel,
