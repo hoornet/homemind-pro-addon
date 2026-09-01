@@ -68,8 +68,13 @@ echo
 # 1 — Absolute paths from a developer machine. Nobody outside can use them and
 #     they expose the local layout of the private repos. Conventional
 #     placeholders in example config are what a reader is supposed to substitute,
-#     so they stay green.
-scan "local-path" '/home/[a-z_][a-z0-9_-]*/' '' '/home/(user|username|youruser|your-user|your_user|me|pi|<[^>]+>|\$\{?[A-Z_]+)/'
+#     so they stay green — and so do service accounts that live inside a
+#     container image rather than on anyone's laptop (`pi`, and `shodh` from the
+#     upstream shodh-memory image, whose bundled models a Dockerfile has to copy
+#     out of /home/shodh). Names are allowlisted one at a time on purpose: the
+#     tempting alternative, skipping `COPY --from=` lines wholesale, would blind
+#     the check to a real `/home/<developer>/` path inside a build stage.
+scan "local-path" '/home/[a-z_][a-z0-9_-]*/' '' '/home/(user|username|youruser|your-user|your_user|me|pi|shodh|<[^>]+>|\$\{?[A-Z_]+)/'
 
 # 2 — A bare routable IP address. Nothing here should ever point at a host by
 #     number: users reach us by hostname and the add-on talks to Home Assistant
