@@ -81,7 +81,7 @@ A few honest notes so it goes smoothly:
 
 - Your model **must support function / tool calling** — that's how Nives actually controls your home.
 - Memory quality scales with the model: stronger models extract and recall facts more reliably.
-- **Running it locally?** Give it room and a capable model. The system prompt plus tool definitions come to roughly 6,700 tokens before you've said a word, so a default 4k context window is already full — use 8k or more. And small models tend to *narrate* tool calls rather than make them: we've watched llama3.1:8b cheerfully report turning on a light it never touched. Around 14B is where it starts behaving.
+- **Running it locally?** Give it room and a capable model. The system prompt plus tool definitions come to roughly 7,200 tokens before you've said a word, so a default 4k context window is already full — use 8k or more. And small models tend to *narrate* tool calls rather than make them: we've watched llama3.1:8b cheerfully report turning on a light it never touched. Around 14B is where it starts behaving.
 - For a fully self-hosted, local-first setup, the open-source **[home-mind](https://github.com/hoornet/home-mind)** project (which Nives grew from) is purpose-built for exactly that.
 
 ## Install
@@ -124,7 +124,7 @@ What has actually diverged:
 | **arm64 / Raspberry Pi** | official Shodh Docker image is amd64-only | add-on ships arm64 binaries — works on a Pi / arm64 HAOS out of the box |
 | **Models** | BYOK: Anthropic / OpenAI / OpenRouter / Ollama | same BYOK, plus optional managed [Nives Cloud](https://nives.house) |
 
-Both are AGPL-3.0 with open repos, and both are maintained. There are **no features locked behind payment** — Cloud exists purely as the less-tinkering option, and the BYOK path is free and never touches our servers. If you enjoy owning every moving part, home-mind is built for you; if you'd rather it just work, that's Nives.
+Both are AGPL-3.0 with open repos, and both are maintained. **The assistant itself is never gated** — every memory, automation, and AI Task feature works the same on BYOK, and that path is free and never touches our servers. Cloud exists purely as the less-tinkering option. (The one Cloud-only extra is optional [transcription](nives/DOCS.md), because it's billed from your balance; on BYOK you use Home Assistant's own speech-to-text, which is already there.) If you enjoy owning every moving part, home-mind is built for you; if you'd rather it just work, that's Nives.
 
 ## Coming from HomeMind PRO?
 
