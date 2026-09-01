@@ -8,27 +8,33 @@
   <img alt="Architectures" src="https://img.shields.io/badge/arch-amd64%20%C2%B7%20aarch64-64748b">
 </p>
 
-<p align="center"><em>An AI assistant for Home Assistant that remembers — one add-on, memory kept on your own machine.</em></p>
+<p align="center"><em>An AI assistant for Home Assistant that remembers. One add-on, and the memory stays on your own machine.</em></p>
 
 <p align="center">
   <img src="assets/memory-recall.png" alt="Asking Nives what it remembers, and getting back a list of preferences and routines" width="540">
 </p>
 
-Talk to your home in plain language — by voice or text through HA Assist — and Nives recalls your preferences, routines, device nicknames, and sensor baselines across every conversation. No re-teaching, no re-explaining.
+Talk to your home in plain language, by voice or text through HA Assist, and Nives recalls your preferences, routines, device nicknames, and sensor baselines across every conversation. No re-teaching, no re-explaining.
 
-> Tell it once — *"100 ppm is normal for my NOx sensor"*, *"bedroom lights should go to 30% in the evening"*, *"call the WLED strip 'main kitchen light'"* — and it remembers next time.
+> Tell it once. *"100 ppm is normal for my NOx sensor"*, *"bedroom lights should go to 30% in the evening"*, *"call the WLED strip 'main kitchen light'"*. It still knows next time.
 
 ## What you get
 
-- **Persistent memory** — preferences, routines, sensor baselines, device nicknames. Survives restarts.
-- **Forgets when you ask it to** — *"forget that my canary word is bumblebee"*. It quotes the exact memory back and waits for your yes before deleting anything.
-- **Natural voice & text control** through Home Assistant Assist.
-- **She is whoever you say she is** — one setting, **Custom Prompt**, replaces her personality outright. Nives is the default: a helpful, plain-spoken assistant who knows your house. Write your own and she becomes it — *"You are HAL 9000, the calm and precise computer from 2001"* is a two-line change, and yes, she will tell you she's afraid she can't do that. The name matters as much as the manner: she knows what she's called, so asking "who are you?" gets an answer rather than a shrug.
-- **Knows your home** — reads your floors, areas, and device capabilities, so it always knows which room a light is in and how to control it.
-- **Creates & manages automations** — just ask ("turn the porch light on at sunset", "make the evening scene 30 minutes earlier") and Nives builds, edits, lists, or removes Home Assistant automations for you — always confirming before it changes anything, and using what it remembers about your home (your "evening", your preferred brightness).
-- **Works inside your automations** — Nives is also a Home Assistant **AI Task** provider: call `ai_task.generate_data` from any automation to get an answer or structured data, reasoned with your home's context. It can even look at a **camera snapshot** and tell you what matters (with a vision-capable model) — great for smarter, low-false-alarm camera and doorbell alerts.
-- **Your memories are stored on your machine** — the memory database lives on your Home Assistant box, not ours, and there's no telemetry. (To answer you, Nives does send the *relevant* memories plus your home layout to the model with each request — the add-on docs spell out exactly what goes where. Want none of it to leave the house? Run a local model via Ollama.)
-- **Two ways to power it** — managed **Nives Cloud** (recommended) or **bring your own key**. Both run the exact same on-device server and memory; only the AI endpoint differs.
+- **Persistent memory.** Preferences, routines, sensor baselines, device nicknames. Survives restarts.
+- **Forgets when you ask it to.** *"Forget that my canary word is bumblebee."* It quotes the exact memory back and waits for your yes before deleting anything.
+- **Voice and text through Home Assistant Assist.** Any Assist pipeline works, satellites included. Spoken answers are written for the ear rather than the page, and when Nives ends on a question it asks Home Assistant to reopen the microphone, by the same rule HA's own agents use, so you can just answer.
+- **It replies in your language.** Nives takes its default from your Assist pipeline, and the language you actually write in always wins. A house whose rooms and devices are named in one language but spoken to in another stays sorted out, and a one-word reply like "ok" or "tv" no longer flips it mid-conversation.
+- **She is whoever you say she is.** One setting, **Custom Prompt**, replaces her personality outright. Nives is the default: a helpful, plain-spoken assistant who knows your house. Write your own and she becomes it. *"You are HAL 9000, the calm and precise computer from 2001"* is a two-line change, and yes, she will tell you she's afraid she can't do that. The name matters as much as the manner: she knows what she's called, so asking "who are you?" gets an answer rather than a shrug.
+- **Knows your home.** Reads your floors, areas, and device capabilities, so it always knows which room a light is in and how to control it.
+- **Creates and manages automations.** Just ask ("turn the porch light on at sunset", "make the evening scene 30 minutes earlier") and Nives builds, edits, lists, or removes Home Assistant automations for you, always confirming before it changes anything, and drawing on what it remembers about your home (your "evening", your preferred brightness). One request can produce several automations when that's what you actually asked for.
+- **It warns you about the traps before you say yes.** An automation with no conditions will run regardless of who's home. A fixed-time trigger checks the temperature once at that moment and never looks again. An edit that would strip away every condition is worth a second look. Nives says all of this while you can still change your mind, and tells you which fields an edit leaves untouched.
+- **Works inside your automations.** Nives is also a Home Assistant **AI Task** provider: call `ai_task.generate_data` from any automation to get an answer or structured data, reasoned with your home's context. It can even look at a **camera snapshot** and tell you what matters (with a vision-capable model), which makes for smarter, low-false-alarm camera and doorbell alerts.
+- **Reachable from scripts and automations.** `conversation.process` works against the Nives agent without a conversation id, so a script or automation can hold a real back-and-forth, confirmations included.
+- **It can do the listening too**, if you use a key from nives.house. Optional, off by default. [See below](#using-it-by-voice).
+- **It tells you before the balance runs out.** On a nives.house key, Nives posts a Home Assistant notification when roughly three days of typical use are left, and a clearer one if it does run dry. Both clear themselves after a top-up. Keys you bring yourself are never watched.
+- **Your memories are stored on your machine.** The memory database lives on your Home Assistant box, not ours, and there's no telemetry. (To answer you, Nives does send the *relevant* memories plus your home layout to the model with each request. The add-on docs spell out exactly what goes where. Want none of it to leave the house? Run a local model via Ollama.)
+- **The add-on's own API is protected.** A token is generated on first start and kept on your machine, so nothing else running on your Home Assistant box can talk to your assistant, drive your devices through it, or wipe what it remembers.
+- **Two ways to power it.** Managed **Nives Cloud** (recommended) or **bring your own key**. Both run the exact same on-device server and memory; only the AI endpoint differs.
 
 ## Teach it, then change your mind
 
@@ -36,57 +42,71 @@ Four separate conversations, in order. Nothing carries over between them except 
 
 ![Teaching Nives a word, recalling it in a new conversation, replacing it, and recalling the new one](assets/memory-story.png)
 
-It quotes the exact stored memory back and does nothing until you confirm. It only ever forgets the one you name — *"don't forget to water the plants"* is still a reminder, not a deletion — and when several memories could match, it lists them and deletes nothing.
+It quotes the exact stored memory back and does nothing until you confirm. It only ever forgets the one you name (*"don't forget to water the plants"* is still a reminder, not a deletion), and when several memories could match, it lists them and deletes nothing.
 
 ## Automations, described in a sentence
 
 ![Asking for an automation in Assist, and the resulting automation in Home Assistant's own list](assets/automation-proof.png)
 
-Notice what it tells you *before* building anything: this automation has no conditions, so it will run regardless of who is home. Nothing is written to your Home Assistant, and no memory is deleted, until you say yes — the confirmation is enforced by the server, not left to the model's good manners.
+Notice what it tells you *before* building anything: this automation has no conditions, so it will run regardless of who is home. Nothing is written to your Home Assistant, and no memory is deleted, until you say yes. The confirmation is enforced by the server, not left to the model's good manners.
+
+## Using it by voice
+
+Nives works with whatever Assist pipeline you already have: a Voice PE puck, another satellite, the Home Assistant app, or simply typing. A spoken question gets a shorter answer built to be read aloud, and if Nives finishes on a question it asks Home Assistant to reopen the microphone for you, the same way HA's built-in agents do.
+
+Speech-to-text happens *before* Nives ever sees your words, and it's where most voice frustration actually starts. Engines running on your own box are excellent at English on decent hardware, but on a small machine they struggle with names (poor "Nives" comes back as *News*, *Knives* or *Nieves*) and with languages other than English. Two things help:
+
+- **Nives answers to its own name even when the microphone mangles it.** A request that opens with one of the common mishearings is understood as its name and answered normally, with no fuss made about it. Words in the middle of a sentence keep their ordinary meaning, so adding knives to the shopping list is still about knives.
+- **Or you can let Nives do the listening.** With a key from nives.house, switch **Transcription** on in the add-on's Cloud settings and restart. A couple of minutes later Nives appears as a **Speech-to-text** choice under Settings → Voice assistants, transcribing from the same balance your conversations already use. Listening is inexpensive next to thinking: a spoken command costs a small fraction of the reply it produces. Your pipeline's language is passed along, so a short command in your own language is understood rather than guessed at.
+
+> **What that second one changes about your privacy, stated plainly.** With Transcription off, only your written request and your home's device list leave the house. With it on, the audio of what you say is sent to be transcribed as well. That is exactly why it stays off until you choose it. Turn it back off and Nives steps out of the Speech-to-text list on its own within a couple of minutes, handing your pipeline back to whichever engine it used before.
+
+Would rather keep audio on your own hardware? Leave it off and use a local engine. Nives works exactly the same either way, it just receives the words instead of the sound. Speaking back to you is Home Assistant's own text-to-speech in both cases, whichever engine your pipeline uses, so nothing changes there.
 
 ## How it fits together
 
 ![Nives architecture](assets/architecture.png)
 
-Everything that stores anything runs on your Home Assistant machine, in one container. The only thing that leaves is the request itself: what you said, the handful of memories relevant to it, and your home's layout. Your memory database never goes anywhere — and if you point Nives at Ollama on your own LAN, nothing leaves at all.
+Everything that stores anything runs on your Home Assistant machine, in one container. The only thing that leaves is the request itself: what you said, the handful of memories relevant to it, and your home's layout. Your memory database never goes anywhere, and if you point Nives at Ollama on your own LAN, nothing leaves at all.
 
 Two services share that container:
 
-- **Nives server** — the conversation engine. Connects to Home Assistant automatically (no URL or token to configure) and controls your devices through HA's own tools.
-- **Shodh Memory** — on-device cognitive memory with semantic search, so Nives surfaces the right context at the right moment. ([Shodh Memory](https://github.com/varun29ankuS/shodh-memory) is an independent open-source project — Nives integrates it, and the same engine powers home-mind.)
+- **Nives server**, the conversation engine. Connects to Home Assistant automatically (no URL or token to configure) and controls your devices through HA's own tools.
+- **Shodh Memory**, on-device cognitive memory with semantic search, so Nives surfaces the right context at the right moment. ([Shodh Memory](https://github.com/varun29ankuS/shodh-memory) is an independent open-source project. Nives integrates it, and the same engine powers home-mind.)
 
 ## Choosing how to power Nives
 
-Nives needs a language model to do the thinking. You have two options — pick one in the add-on's **Configuration** tab.
+Nives needs a language model to do the thinking. You have two options, picked in the add-on's **Configuration** tab.
 
-### Nives Cloud — the easy, recommended path
+### Nives Cloud, the easy and recommended path
 
-The no-fuss option, and the best choice for most people — especially if you're new to this, or you'd simply rather not spend your evenings benchmarking models and tweaking settings.
+The no-fuss option, and the best choice for most people, especially if you're new to this or you'd simply rather not spend your evenings benchmarking models and tweaking settings.
 
-With Nives Cloud you **never choose, test, or babysit a model.** Behind the scenes we run **the best model for the job, always current** — we keep testing the field, and when a better one comes along (or ours gets retired) we swap it on our side. Your assistant just keeps getting better, with nothing for you to install or change.
+With Nives Cloud you **never choose, test, or babysit a model.** Behind the scenes we run **the best model for the job, always current.** We keep testing the field, and when a better one comes along (or ours gets retired) we swap it on our side. Your assistant just keeps getting better, with nothing for you to install or change.
 
 **How it works:**
 
-1. Buy a ticket at **[nives.house](https://nives.house)** — **€10, no subscription**; for most homes one ticket covers weeks of everyday use, and you pay again only when it runs out.
+1. Buy a ticket at **[nives.house](https://nives.house)**. **€10, no subscription.** For most homes one ticket covers weeks of everyday use, and you pay again only when it runs out.
 2. Copy the key it gives you.
 3. Paste it into the add-on's **Cloud** section and save.
 
-That's it — no AI provider accounts to manage, no model names to research, no surprise bills (Nives warns you before the balance runs out, and tops up automatically only if you asked it to). See **[nives.house](https://nives.house)** for details.
+That's it. No AI provider accounts to manage, no model names to research, no surprise bills: Nives warns you before the balance runs out, and tops up automatically only if you asked it to. See **[nives.house](https://nives.house)** for details.
 
-### Bring Your Own Key (BYOK) — for tinkerers
+### Bring Your Own Key (BYOK), for tinkerers
 
-Prefer full control? Run Nives with **your own** provider key — Anthropic, OpenAI, OpenRouter, or a local Ollama endpoint — and pick your own model. Nothing to buy from us, ever.
+Prefer full control? Run Nives with **your own** provider key (Anthropic, OpenAI, OpenRouter, or a local Ollama endpoint) and pick your own model. Nothing to buy from us, ever.
 
 A few honest notes so it goes smoothly:
 
-- Your model **must support function / tool calling** — that's how Nives actually controls your home.
+- Your model **must support function / tool calling.** That's how Nives actually controls your home.
 - Memory quality scales with the model: stronger models extract and recall facts more reliably.
-- **Running it locally?** Give it room and a capable model. The system prompt plus tool definitions come to roughly 7,200 tokens before you've said a word, so a default 4k context window is already full — use 8k or more. And small models tend to *narrate* tool calls rather than make them: we've watched llama3.1:8b cheerfully report turning on a light it never touched. Around 14B is where it starts behaving.
+- **Running it locally?** Give it room and a capable model. The system prompt plus tool definitions come to roughly 7,200 tokens before you've said a word, so a default 4k context window is already full. Use 8k or more. And small models tend to *narrate* tool calls rather than make them: we've watched llama3.1:8b cheerfully report turning on a light it never touched. Around 14B is where it starts behaving.
+- **Repeat turns are cheaper than they look.** Your home's layout and device capabilities go out with every message, but they sit ahead of the parts that change each turn, so a provider that caches prompts reuses them instead of billing them again. On a mid-size home we measured repeat turns going from about a third of the prompt cached to around 99%.
 - For a fully self-hosted, local-first setup, the open-source **[home-mind](https://github.com/hoornet/home-mind)** project (which Nives grew from) is purpose-built for exactly that.
 
 ## Install
 
-You need Home Assistant OS or Supervised (the add-on store), on amd64 or aarch64 — a Raspberry Pi 4/5 is fine. Running HA in bare Docker or Core, with no add-on store? Use [home-mind](https://github.com/hoornet/home-mind) instead; it's the same engine in Docker Compose form.
+You need Home Assistant OS or Supervised (the add-on store), on amd64 or aarch64. A Raspberry Pi 4/5 is fine. Running HA in bare Docker or Core, with no add-on store? Use [home-mind](https://github.com/hoornet/home-mind) instead; it's the same engine in Docker Compose form.
 
 One click adds the repository to your Home Assistant:
 
@@ -101,50 +121,56 @@ Or manually:
 5. Open the **Configuration** tab, choose **Cloud** or **BYOK** (see above), enter your key, and **Save**.
 6. **Start** the add-on.
 
-Then point Home Assistant at it: **Settings → Voice assistants → (your assistant) → Conversation agent → Nives**. Now just talk to your home — type in Assist, or speak if you've set up a voice pipeline.
+Then point Home Assistant at it: **Settings → Voice assistants → (your assistant) → Conversation agent → Nives**. Now just talk to your home. Type in Assist, or speak if you've set up a voice pipeline.
 
 ## Nives or home-mind?
 
-People regularly ask how Nives relates to **[home-mind](https://github.com/hoornet/home-mind)** — reasonable, since both come from the same author. Short version: **it's the same brain in a different box, and Nives has grown extra tools.**
+People regularly ask how Nives relates to **[home-mind](https://github.com/hoornet/home-mind)**, which is reasonable, since both come from the same author. Short version: **it's the same brain in a different box, and Nives has grown extra tools.**
 
-Nives started as a fork of the home-mind server, so the core — the conversation engine and the memory layer — is shared heritage. Since then they've deliberately become two independent products aimed at two kinds of people:
+Nives started as a fork of the home-mind server, so the core (the conversation engine and the memory layer) is shared heritage. Since then they've deliberately become two independent products aimed at two kinds of people:
 
 - **home-mind** is the DIY path: Docker Compose, run the server and [Shodh Memory](https://github.com/varun29ankuS/shodh-memory) yourself, install the integration, wire it together. Full control, every choice yours, completely hands-on.
-- **Nives** is the same stack as **one Home Assistant add-on**: one container, the companion integration installs itself, Supervisor auto-discovers it. Add repo → install → paste a key → done. In most cases you never need a terminal.
+- **Nives** is the same stack as **one Home Assistant add-on**: one container, the companion integration installs itself, Supervisor auto-discovers it. Add repo, install, paste a key, done. In most cases you never need a terminal.
 
 What has actually diverged:
 
 | | home-mind | Nives |
 |---|---|---|
 | **Install** | Docker Compose + manual integration setup | One HA add-on, self-configuring |
-| **HA tools** | 6 (read state, list/search entities, call services, history, forget a memory) | 11 — those plus automation **create/list/update/delete** and service discovery, behind a server-enforced confirmation gate |
-| **AI Task** | — | `ai_task.generate_data` (text + structured output), usable inside your automations |
-| **Vision** | — | camera snapshots as input — "is this expected?" on a doorbell frame |
-| **Voice satellites** | — | reopens the mic when it asks you a question (Voice PE `continue_conversation`) |
-| **arm64 / Raspberry Pi** | official Shodh Docker image is amd64-only | add-on ships arm64 binaries — works on a Pi / arm64 HAOS out of the box |
+| **HA tools** | 6 (read state, list/search entities, call services, history, forget a memory) | 11: those plus automation **create/list/update/delete** and service discovery, behind a server-enforced confirmation gate |
+| **AI Task** | | `ai_task.generate_data` (text + structured output), usable inside your automations |
+| **Vision** | | camera snapshots as input, so "is this expected?" on a doorbell frame |
+| **Speech-to-text** | your pipeline's own engine | same, plus optional cloud transcription on a nives.house key |
+| **Voice satellites** | | sets `continue_conversation` after a question, so the satellite reopens the mic |
+| **arm64 / Raspberry Pi** | official Shodh Docker image is amd64-only | add-on ships arm64 binaries, so it works on a Pi or arm64 HAOS out of the box |
 | **Models** | BYOK: Anthropic / OpenAI / OpenRouter / Ollama | same BYOK, plus optional managed [Nives Cloud](https://nives.house) |
 
-Both are AGPL-3.0 with open repos, and both are maintained. **The assistant itself is never gated** — every memory, automation, and AI Task feature works the same on BYOK, and that path is free and never touches our servers. Cloud exists purely as the less-tinkering option. (The one Cloud-only extra is optional [transcription](nives/DOCS.md), because it's billed from your balance; on BYOK you use Home Assistant's own speech-to-text, which is already there.) If you enjoy owning every moving part, home-mind is built for you; if you'd rather it just work, that's Nives.
+Both are AGPL-3.0 with open repos, and both are maintained. **The assistant itself is never gated**: every memory, automation, and AI Task feature works the same on BYOK, and that path is free and never touches our servers. Cloud exists purely as the less-tinkering option. (The one Cloud-only extra is optional transcription, because it's billed from your balance; on BYOK you use Home Assistant's own speech-to-text, which is already there.) If you enjoy owning every moving part, home-mind is built for you; if you'd rather it just work, that's Nives.
+
+## Beyond Home Assistant
+
+**[Nives for Omarchy](https://github.com/hoornet/nives-omarchy)** puts the same conversation on your Linux desktop. Press a key, a small panel opens in the corner, ask by typing or by voice, and the answer is read back to you. It talks to Home Assistant's own conversation API, so it works with any Assist agent, and it's MIT-licensed and entirely separate from the add-on. It's at its best with Nives on the other end, since that's what gives it memory and automations, and whoever answers is set on the Home Assistant side, so the voice in that panel can be Nives, or HAL 9000, or anyone you care to describe.
 
 ## Coming from HomeMind PRO?
 
-Nives is the same add-on under a new name, since v2.0.0 — same memory layer, same Cloud and BYOK modes, same behaviour. The name is Slovenian, from the Latin *nives*, "snows"; it's pronounced **NEE-ves**, and it's a good deal easier to say to a voice assistant than an acronym.
+Nives is the same add-on under a new name, since v2.0.0: same memory layer, same Cloud and BYOK modes, same behaviour. The name is Slovenian, from the Latin *nives*, "snows". It's pronounced **NEE-ves**, and it's a good deal easier to say to a voice assistant than an acronym.
 
 Switching over is a clean install rather than an update, because the add-on's underlying slug changed:
 
-1. Install **Nives** from the same repository — it appears alongside your existing HomeMind PRO rather than replacing it.
+1. Install **Nives** from the same repository. It appears alongside your existing HomeMind PRO rather than replacing it.
 2. Copy your configuration across (your key and any options).
 3. Start Nives, check it answers, then uninstall HomeMind PRO.
 
-Memories and conversation history don't carry over, so Nives starts fresh and learns you again. Your account and Cloud balance are unaffected — they simply live at [nives.house](https://nives.house) now, and old `homemindpro.com` links redirect there.
+Memories and conversation history don't carry over, so Nives starts fresh and learns you again. Your account and Cloud balance are unaffected. They simply live at [nives.house](https://nives.house) now, and old `homemindpro.com` links redirect there.
 
 The [v2.0.0 changelog](nives/CHANGELOG.md) has the full detail.
 
 ## Related projects
 
-- **[home-mind](https://github.com/hoornet/home-mind)** — the open-source server Nives grew from (AGPL-3.0). An independent project; run it yourself if you prefer the fully-DIY path.
-- **[Shodh Memory](https://github.com/varun29ankuS/shodh-memory)** — the cognitive memory engine powering both, by [@varun29ankuS](https://github.com/varun29ankuS). We integrate it, we didn't write it — and neither project would exist without it.
-- **[nives.house](https://nives.house)** — the optional Nives Cloud service.
+- **[home-mind](https://github.com/hoornet/home-mind)**, the open-source server Nives grew from (AGPL-3.0). An independent project; run it yourself if you prefer the fully-DIY path.
+- **[Nives for Omarchy](https://github.com/hoornet/nives-omarchy)** (MIT), a desktop chat overlay for any Home Assistant Assist agent.
+- **[Shodh Memory](https://github.com/varun29ankuS/shodh-memory)**, the cognitive memory engine powering both, by [@varun29ankuS](https://github.com/varun29ankuS). We integrate it, we didn't write it, and neither project would exist without it.
+- **[nives.house](https://nives.house)**, the optional Nives Cloud service.
 
 ## Support & feedback
 
@@ -155,7 +181,7 @@ Nives is in early access and we'd genuinely love to hear from you.
 
 ## License
 
-Nives — Home Assistant add-on bundling a conversation server (a hard fork of [home-mind](https://github.com/hoornet/home-mind)) and Shodh Memory.
+Nives, a Home Assistant add-on bundling a conversation server (a hard fork of [home-mind](https://github.com/hoornet/home-mind)) and Shodh Memory.
 Copyright (c) 2026 Jure Sršen.
 
-AGPL-3.0 — see [LICENSE](LICENSE).
+AGPL-3.0, see [LICENSE](LICENSE).
