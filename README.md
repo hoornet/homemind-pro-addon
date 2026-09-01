@@ -34,7 +34,7 @@ Talk to your home in plain language, by voice or text through HA Assist, and Niv
 - **It tells you before the balance runs out.** On a nives.house key, Nives posts a Home Assistant notification when roughly three days of typical use are left, and a clearer one if it does run dry. Both clear themselves after a top-up. Keys you bring yourself are never watched.
 - **Your memories are stored on your machine.** The memory database lives on your Home Assistant box, not ours, and there's no telemetry. (To answer you, Nives does send the *relevant* memories plus your home layout to the model with each request. The add-on docs spell out exactly what goes where. Want none of it to leave the house? Run a local model via Ollama.)
 - **The add-on's own API is protected.** A token is generated on first start and kept on your machine, so nothing else running on your Home Assistant box can talk to your assistant, drive your devices through it, or wipe what it remembers.
-- **Two ways to power it.** Managed **Nives Cloud** (recommended) or **bring your own key**. Both run the exact same on-device server and memory; only the AI endpoint differs.
+- **Two ways to power it.** Managed **Nives Cloud**, or **bring your own key**. Both run the exact same on-device server and memory; only the AI endpoint differs.
 
 ## Teach it, then change your mind
 
@@ -78,11 +78,11 @@ Two services share that container:
 
 Nives needs a language model to do the thinking. You have two options, picked in the add-on's **Configuration** tab.
 
-### Nives Cloud, the easy and recommended path
+### Nives Cloud
 
-The no-fuss option, and the best choice for most people, especially if you're new to this or you'd simply rather not spend your evenings benchmarking models and tweaking settings.
+One key, and choosing a model stops being your problem. We keep testing the field and run **the best model for the job, always current**, swapping it on our side when a better one turns up or ours gets retired, so the assistant improves without you installing or changing a thing.
 
-With Nives Cloud you **never choose, test, or babysit a model.** Behind the scenes we run **the best model for the job, always current.** We keep testing the field, and when a better one comes along (or ours gets retired) we swap it on our side. Your assistant just keeps getting better, with nothing for you to install or change.
+It's also where the extras live, like optional transcription, because those need a model of their own picked and paid for per job rather than per conversation.
 
 **How it works:**
 

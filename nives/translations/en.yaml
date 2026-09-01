@@ -24,7 +24,10 @@ configuration:
   byok:
     name: "Bring Your Own Key (BYOK)"
     description: >-
-      Settings for using your own API key. Best-effort; for serious local/custom-model setups, see home-mind (open source). Only used when LLM Mode is "byok".
+      Settings for using your own API key. Your model must support function/tool
+      calling, which is how Nives controls your home. Going deep on local or
+      custom models? The open-source home-mind project is built around that, and
+      it is the same engine. Only used when LLM Mode is "byok".
     provider:
       name: Provider
       description: >-

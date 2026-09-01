@@ -30,9 +30,9 @@ Nives bundles two services in one add-on:
 
 ---
 
-## Cloud Mode (recommended)
+## Cloud Mode
 
-Use Nives Cloud — a managed AI service on a prepaid balance. Buy a ticket, use it until it runs out, top up when you like. No subscription, no API key management, no surprise bills.
+Use Nives Cloud, a managed AI service on a prepaid balance. Buy a ticket, use it until it runs out, top up when you like. No subscription, no API key management, no surprise bills.
 
 ### Setup
 
@@ -87,14 +87,14 @@ Nives keeps an eye on your remaining balance. When about three days of typical u
 
 ## BYOK Mode (Bring Your Own Key)
 
-Use your own API key from any supported provider. Your data goes directly to the provider — no middleman.
+Use your own API key from any supported provider. Your data goes directly to the provider, with no middleman.
 
-> **Important:** BYOK is best-effort and not actively supported. Two requirements must hold or chat will fail:
->
-> 1. Your selected model **must** support function/tool calling. Models without it return HTTP 404 ("No endpoints found that support tool use").
-> 2. Memory extraction quality varies by model — some small open-weight models may not store facts reliably.
->
-> For deep local/Ollama setups or custom-model work, the open-source [home-mind](https://github.com/hoornet/home-mind) project is the right tool. The Nives add-on is optimised for Nives Cloud.
+Two things to get right, and chat will fail if either is wrong:
+
+1. Your model **must** support function / tool calling. That is how Nives controls your home, and a model without it returns HTTP 404 ("No endpoints found that support tool use").
+2. Memory extraction quality varies by model. Some small open-weight models don't store facts reliably.
+
+Going deep on local or Ollama setups? The open-source [home-mind](https://github.com/hoornet/home-mind) project is built around exactly that, and it's the same engine.
 
 ### Setup
 
