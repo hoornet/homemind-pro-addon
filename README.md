@@ -172,6 +172,17 @@ The [v2.0.0 changelog](nives/CHANGELOG.md) has the full detail.
 - **[Shodh Memory](https://github.com/varun29ankuS/shodh-memory)**, the cognitive memory engine powering both, by [@varun29ankuS](https://github.com/varun29ankuS). We integrate it, we didn't write it, and neither project would exist without it.
 - **[nives.house](https://nives.house)**, the optional Nives Cloud service.
 
+## Thanks
+
+Nives is written by one person, but it hasn't been improved by one person. GitHub's contributors list counts merged commits only, so it will never show the people who have shaped this add-on most. They belong here instead.
+
+- **[@pitzoid](https://github.com/pitzoid)** shaped the whole "just ask her to forget it" design in [#54](https://github.com/hoornet/nives/issues/54), stuck with it through several rounds, and found along the way that Nives could quietly learn its author's name as *yours* from an example in her own prompt. Also reported the double restart that looked exactly like Home Assistant crashing ([#50](https://github.com/hoornet/nives/issues/50)).
+- **[@alcohen83](https://github.com/alcohen83)** pinpointed why automations and scripts couldn't hold a conversation with Nives at all ([#63](https://github.com/hoornet/nives/issues/63)), then spotted that a per-request timestamp sat in front of the cacheable part of the prompt ([#66](https://github.com/hoornet/nives/issues/66)). That second one made repeat turns dramatically cheaper for everybody.
+- **[@Kristofer-KNE](https://github.com/Kristofer-KNE)** reported that bring-your-own-key was broken against OpenAI's newer models ([#60](https://github.com/hoornet/nives/issues/60)), and confirmed the fix.
+- **[@cweld1332-eng](https://github.com/cweld1332-eng)** reported the Voice PE follow-up problem ([#25](https://github.com/hoornet/nives/issues/25)) with a control test against another agent that isolated the cause in one step.
+
+If something ships because you reported it or built it, you get named here and in that release's changelog entry, unless you'd rather not be.
+
 ## Support & feedback
 
 Nives is in early access and we'd genuinely love to hear from you.
