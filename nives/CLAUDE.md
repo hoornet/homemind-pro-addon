@@ -68,7 +68,11 @@ HA Core
 ### HA Integration (Automatic)
 
 - `homeassistant_api: true` in `config.yaml` → container gets `SUPERVISOR_TOKEN`
-- Server uses `HA_URL=http://homeassistant:8123` + `HA_TOKEN=$SUPERVISOR_TOKEN`
+- Server uses **`HA_URL=http://supervisor/core`** + `HA_TOKEN=$SUPERVISOR_TOKEN` — check
+  `options-to-env.sh`, which is what actually sets it. This line used to say
+  `http://homeassistant:8123`, which is wrong and would send anyone who trusted it
+  chasing a 401: `SUPERVISOR_TOKEN` authenticates against the **Supervisor proxy**, not
+  against Core directly, so the direct address rejects it however correct the token is.
 - No user configuration needed for HA access
 - `discovery: [nives]` in `config.yaml` auto-configures the companion HA integration
 
