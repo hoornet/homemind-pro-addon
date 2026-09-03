@@ -96,13 +96,23 @@ class NivesConversationAgent(ConversationEntity):
         # never be completed, because the second turn had forgotten the first.
         conversation_id = user_input.conversation_id or ulid_now()
 
-        # Voice satellites (Voice PE etc.) always carry a device_id; the
-        # dashboard/app Assist dialog does not. The server uses this to switch
-        # to its voice persona — shorter prompt, tighter token budget — so
-        # spoken answers don't read like essays. (The legacy HACS integration
-        # keyed on agent_id, but modern HA sets agent_id on every routed
-        # request — that heuristic would mark ALL requests as voice.)
-        is_voice = user_input.device_id is not None
+        # "Spoken" means the request came from a voice satellite entity (Voice
+        # PE, ESPHome and Wyoming satellites), which is the only case where the
+        # reply is certain to be read aloud and nothing else. HA sets
+        # satellite_id on exactly those requests. The server uses this to switch
+        # to its voice persona: shorter prompt, tighter token budget.
+        #
+        # This used to key on device_id, on the belief that the app's Assist
+        # dialog sends none. It does: the companion app passes the phone's own
+        # device_id on every run, typed or spoken, so every question typed on a
+        # phone was answered under the 500-token spoken ceiling. Long analytical
+        # questions could not be answered from a phone at all, and the failure
+        # looked like a model problem. Found from the add-on's own cap log
+        # (`cap=500`) once that existed. The phone's mic button now counts as
+        # written, so a long spoken answer is read out in full rather than cut
+        # off, which is how Home Assistant's own conversation integrations
+        # behave. (getattr: satellite_id does not exist on older Cores.)
+        is_voice = getattr(user_input, "satellite_id", None) is not None
 
         try:
             response_text = await self._call_api(

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.10
+
+- **Questions typed on the phone get full-length answers.** Anything asked through the Assist dialog in the Home Assistant app was being treated as a spoken request, so it got the short spoken ceiling and the brief voice persona. Long analytical questions from the phone could not finish at all, and the reply said the model had run out of room. Nives now treats a request as spoken only when it comes from a voice satellite such as Voice PE, which is when the answer is certain to be read aloud. Speaking into the phone's microphone now gets the written ceiling as well, so a long spoken answer is read out in full rather than cut short. **Restart Home Assistant once after this update.** Server unchanged (0.15.6).
+
 ## 2.5.9
 
 - **Works again on Home Assistant 2026.9.** After updating Core to 2026.9, Nives stopped answering in Assist with "Oops, an error has occurred", and the integration failed to load with `No module named 'voluptuous_openapi'`. Home Assistant 2026.9 no longer ships that library; it converts schemas with a different one. Nives now uses whichever one your Home Assistant provides, and if neither is present only the structured-output side of AI Tasks is affected, never the conversation agent. **Restart Home Assistant once after this update** so the updated integration loads; the add-on posts a notification to remind you. Server unchanged (0.15.6).
