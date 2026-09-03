@@ -13,7 +13,20 @@ import logging
 
 import aiohttp
 import voluptuous as vol
-from voluptuous_openapi import convert
+
+# Home Assistant 2026.9 dropped voluptuous_openapi from Core's dependencies and
+# converts schemas with probatio instead, which it now ships. Same call shape.
+# Prefer the current one, fall back to the old one on earlier Cores, and load
+# either way: a missing schema converter must cost the structured-output feature
+# alone, not the conversation agent. A bare module-level import here is what
+# took the whole integration down the day 2026.9 arrived.
+try:
+    from probatio import to_openapi as _schema_to_openapi
+except ImportError:  # pragma: no cover - depends on the Core version
+    try:
+        from voluptuous_openapi import convert as _schema_to_openapi
+    except ImportError:
+        _schema_to_openapi = None
 
 from homeassistant.components import ai_task, conversation
 from homeassistant.core import HomeAssistant
@@ -75,7 +88,15 @@ class NivesAITaskEntity(ai_task.AITaskEntity):
         # prompt and parse/validate the reply ourselves (the server has no native
         # JSON mode).
         if task.structure is not None:
-            schema = convert(task.structure, custom_serializer=llm.selector_serializer)
+            if _schema_to_openapi is None:
+                raise HomeAssistantError(
+                    "Nives cannot describe a structured output on this Home Assistant "
+                    "version: no JSON schema converter is available. Plain text tasks "
+                    "still work."
+                )
+            schema = _schema_to_openapi(
+                task.structure, custom_serializer=llm.selector_serializer
+            )
             message = (
                 f"{task.instructions}\n\n"
                 "Respond with ONLY a JSON object that matches this JSON schema. "

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.9
+
+- **Works again on Home Assistant 2026.9.** After updating Core to 2026.9, Nives stopped answering in Assist with "Oops, an error has occurred", and the integration failed to load with `No module named 'voluptuous_openapi'`. Home Assistant 2026.9 no longer ships that library; it converts schemas with a different one. Nives now uses whichever one your Home Assistant provides, and if neither is present only the structured-output side of AI Tasks is affected, never the conversation agent. **Restart Home Assistant once after this update** so the updated integration loads; the add-on posts a notification to remind you. Server unchanged (0.15.6).
+
 ## 2.5.8
 
 - **Questions about trends across days now get a real answer.** Ask Nives to look at a sensor over the past week and compare it with others, and she now receives every reading grouped by the hour, with the low, high and average for each, rather than a thin sample of individual points. A short spike that used to fall between the samples shows up as a high reading in the hour it happened. Presence sensors, switches and other on/off devices are summarised by the state they held longest in each hour and how often they changed. This is also lighter for the model per sensor, so it can afford to look at more of them in one go.
