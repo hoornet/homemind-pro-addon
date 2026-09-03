@@ -159,6 +159,7 @@ curl -H "Authorization: Bearer <token>" http://<addon-host>:3100/api/chat ...
 | Option | Description |
 |--------|-------------|
 | Custom Prompt | The assistant's personality — what you write replaces the default persona outright (e.g. "You are HAL 9000, the calm and precise computer from 2001"). This is the one place to set it; it applies once the add-on restarts. Leave empty for the default. |
+| Maximum Answer Length | How much room one written answer gets, in tokens. Leave it empty and Nives chooses. Raise it if long answers stop before they finish, which is most likely when you ask about several sensors at once or over a long period. Longer answers cost a little more. Spoken answers are not affected. |
 | Log Level | `debug`, `info`, `warn`, or `error`. Use `debug` for troubleshooting. |
 
 ---

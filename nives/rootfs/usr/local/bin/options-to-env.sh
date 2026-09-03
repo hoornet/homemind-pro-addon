@@ -48,6 +48,7 @@ LLM_API_KEY=$(jq -r '.byok.api_key // ""' "$OPTIONS")
 LLM_MODEL=$(jq -r '.byok.model // ""' "$OPTIONS")
 LLM_BASE_URL=$(jq -r '.byok.base_url // ""' "$OPTIONS")
 CUSTOM_PROMPT=$(jq -r '.custom_prompt // ""' "$OPTIONS")
+MAX_OUTPUT_TOKENS=$(jq -r '.max_output_tokens // ""' "$OPTIONS")
 LOG_LEVEL=$(jq -r '.log_level // "info"' "$OPTIONS")
 
 # --- LLM configuration ---
@@ -226,5 +227,6 @@ write_env "LOG_LEVEL" "$LOG_LEVEL"
 
 # --- Optional ---
 [ -n "$CUSTOM_PROMPT" ] && write_env "CUSTOM_PROMPT" "$CUSTOM_PROMPT"
+[ -n "$MAX_OUTPUT_TOKENS" ] && write_env "MAX_OUTPUT_TOKENS" "$MAX_OUTPUT_TOKENS"
 
-echo "[init] Environment configured (mode=${LLM_MODE}, provider=${LLM_PROVIDER:-cloud})"
+echo "[init] Environment configured (mode=${LLM_MODE}, provider=${LLM_PROVIDER:-cloud}, max_output_tokens=${MAX_OUTPUT_TOKENS:-default})"

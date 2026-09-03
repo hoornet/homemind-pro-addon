@@ -1,5 +1,5 @@
 name: "Nives"
-version: "2.5.7"
+version: "2.5.8"
 slug: "nives"
 description: "AI assistant with cognitive memory for Home Assistant"
 url: "https://github.com/hoornet/nives"
@@ -46,4 +46,9 @@ schema:
     model: "str?"
     base_url: "str?"
   custom_prompt: "str?"
+  # Ceiling on one written reply. Left unset, Nives picks its own. Deliberately
+  # absent from `options:` above so that "unset" stays a real state rather than
+  # a magic number, and so the built-in default can be improved without every
+  # existing install being pinned to whatever today's value happens to be.
+  max_output_tokens: "int(256,32768)?"
   log_level: "list(debug|info|warn|error)"

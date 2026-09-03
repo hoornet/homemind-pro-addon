@@ -9,9 +9,18 @@ import { buildSystemPrompt, type CachedSystemPrompt } from "./prompts.js";
 import { HA_TOOLS } from "./tools.js";
 import { randomUUID } from "node:crypto";
 import { handleToolCall, extractAndStoreFacts, type ToolContext } from "./tool-handler.js";
+import {
+  readUsage,
+  describeUsage,
+  WRITTEN_OUTPUT_CAP,
+  VOICE_OUTPUT_CAP,
+  TRUNCATION_NOTICE,
+  VOICE_TRUNCATION_NOTICE,
+} from "./usage.js";
 import type {
   ChatRequest,
   ChatResponse,
+  ChatError,
   StreamCallback,
   IChatEngine,
   IFactExtractor,
@@ -212,11 +221,49 @@ export class LLMClient implements IChatEngine {
       toolCtx.forgetTargets
     ).catch((err) => console.error("Fact extraction failed:", err));
 
+    // 8. Nothing usable came back: say why, so the integration can show a real
+    // hint instead of "I received your request but got no response."
+    const toolUseCount = response.content.filter((c) => c.type === "tool_use").length;
+    const error: ChatError | undefined =
+      responseText === "" && toolUseCount === 0
+        ? this.classifyEmptyResponse(response.stop_reason)
+        : undefined;
+
+    // A reply that ran out of room but did write something is the common case,
+    // and the integration returns text whenever there is any, so `error` would
+    // never reach the reader. Say so in the reply itself.
+    const truncated = response.stop_reason === "max_tokens" && responseText !== "";
+    const finalText = truncated
+      ? responseText + (isVoice ? VOICE_TRUNCATION_NOTICE : TRUNCATION_NOTICE)
+      : responseText;
+
     // Count facts learned (we don't wait for extraction, so return 0 for now)
     return {
-      response: responseText,
+      response: finalText,
       toolsUsed,
       factsLearned: 0,
+      ...(error ? { error } : {}),
+    };
+  }
+
+  private classifyEmptyResponse(stopReason: string | null): ChatError {
+    if (stopReason === "max_tokens") {
+      // Anthropic reports no separate reasoning count, so unlike the OpenAI
+      // engine there is nothing here to distinguish "spent it thinking" from
+      // "prompt too large". The advice is the same either way.
+      return {
+        code: "MAX_TOKENS_TRUNCATED",
+        hint:
+          "Nives ran out of room before it could finish the answer. A shorter " +
+          "time range, or fewer sensors in one question, will usually get it " +
+          "through.",
+      };
+    }
+    return {
+      code: "EMPTY_CONTENT",
+      hint:
+        "The model returned no text and no tool calls. If this keeps happening " +
+        "with a particular question, try rephrasing it.",
     };
   }
 
@@ -226,14 +273,9 @@ export class LLMClient implements IChatEngine {
    * Uses prompt caching for the static system prompt.
    */
 
-  /**
-   * Ceiling on one reply. A spoken answer stays short because it is read out
-   * loud; a written one gets room to actually finish, since 2048 truncated
-   * mid-analysis often enough to be reported. Reasoning models spend this same
-   * budget thinking, which is why the written default is not tighter.
-   */
+  /** Ceiling on one reply; see WRITTEN_OUTPUT_CAP for why it is what it is. */
   private maxOutputTokens(isVoice: boolean): number {
-    return this.config.maxOutputTokens ?? (isVoice ? 500 : 4096);
+    return this.config.maxOutputTokens ?? (isVoice ? VOICE_OUTPUT_CAP : WRITTEN_OUTPUT_CAP);
   }
 
   private async streamMessage(
@@ -243,9 +285,10 @@ export class LLMClient implements IChatEngine {
     onChunk?: StreamCallback,
     disableTools = false
   ): Promise<Anthropic.Message> {
+    const cap = this.maxOutputTokens(isVoice);
     const stream = this.anthropic.messages.stream({
       model: this.config.llmModel,
-      max_tokens: this.maxOutputTokens(isVoice),
+      max_tokens: cap,
       system: systemPrompt,
       tools: HA_TOOLS,
       // Keep the tool list (history references it) but stop further calls.
@@ -261,6 +304,29 @@ export class LLMClient implements IChatEngine {
     }
 
     // Wait for the complete message
-    return await stream.finalMessage();
+    const message = await stream.finalMessage();
+
+    // Anthropic always reports usage on the final message, so unlike the OpenAI
+    // engine nothing has to be requested for it. Same two lines as over there:
+    // a cap running out is a warning whatever it interrupted, and what a
+    // successful turn cost is what says how much margin is left.
+    const usage = readUsage(message.usage);
+    const visibleChars = message.content
+      .filter((c): c is Anthropic.TextBlock => c.type === "text")
+      .reduce((n, c) => n + c.text.length, 0);
+    const toolUses = message.content.filter((c) => c.type === "tool_use").length;
+    if (message.stop_reason === "max_tokens") {
+      console.warn(
+        `[llm] output cap reached: cap=${cap} ${describeUsage(usage)} ` +
+          `visible_chars=${visibleChars} tool_calls=${toolUses} model=${this.config.llmModel}`
+      );
+    } else if (this.config.logLevel === "debug") {
+      console.log(
+        `[llm] turn ok: cap=${cap} ${describeUsage(usage)} ` +
+          `finish=${message.stop_reason ?? "none"} tool_calls=${toolUses}`
+      );
+    }
+
+    return message;
   }
 }

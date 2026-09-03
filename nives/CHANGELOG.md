@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.5.8
+
+- **Questions about trends across days now get a real answer.** Ask Nives to look at a sensor over the past week and compare it with others, and she now receives every reading grouped by the hour, with the low, high and average for each, rather than a thin sample of individual points. A short spike that used to fall between the samples shows up as a high reading in the hour it happened. Presence sensors, switches and other on/off devices are summarised by the state they held longest in each hour and how often they changed. This is also lighter for the model per sensor, so it can afford to look at more of them in one go.
+- **Nives tells you when an answer was cut short.** If a written reply runs out of room, it now ends with a short note saying so and what to try. Spoken replies get a one-sentence version. Until now the reply simply ended.
+- **More room for long answers, and a setting for it.** The ceiling on one written answer has doubled again. A new **Maximum Answer Length** option in the add-on configuration lets you raise or lower it yourself; leave it empty and Nives chooses. Spoken answers are unchanged and stay short.
+- **History lookups are lighter on Home Assistant.** Nives now asks the recorder for only the fields it uses, which trims the work Home Assistant does on a week-long question.
+- For anyone reading the add-on log: a reply that hits its ceiling now logs the token breakdown, and at debug level every reply logs what it cost.
+- Bundles server 0.15.6. Both the Cloud and the bring-your-own-key engines get all of the above.
+
 ## 2.5.7
 
 - **Longer answers are no longer cut off mid-sentence.** Ask Nives to compare a few sensors or explain what it makes of an overnight reading and the reply can run long. The ceiling on a single written answer has been doubled, so those answers finish. Spoken answers are unchanged and stay short, because they are read out loud. If you run your own model and want a different ceiling, `OPENAI_MAX_TOKENS` now applies to conversations as well as to memory extraction, which is what it always said it did. Bundles server 0.15.5.

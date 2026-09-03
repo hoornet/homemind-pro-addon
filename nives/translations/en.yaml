@@ -53,6 +53,14 @@ configuration:
       default Nives persona outright, so one sentence describing who it is does
       the job (e.g. "You are HAL 9000, the calm and precise computer from 2001").
       Applies once the add-on restarts. Leave empty for the default Nives persona.
+  max_output_tokens:
+    name: Maximum Answer Length
+    description: >-
+      How much room one written answer gets, counted in tokens. Leave this empty
+      and Nives chooses for you. Raise it if long answers stop before they
+      finish, which is most likely when you ask about several sensors at once or
+      over a long period. Longer answers cost a little more. Spoken answers are
+      not affected and stay short, because they are read out loud.
   log_level:
     name: Log Level
     description: >-
