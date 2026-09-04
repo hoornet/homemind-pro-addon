@@ -1,5 +1,5 @@
 name: "Nives"
-version: "2.5.12"
+version: "2.5.13"
 slug: "nives"
 description: "AI assistant with cognitive memory for Home Assistant"
 url: "https://github.com/hoornet/nives"
@@ -51,4 +51,8 @@ schema:
   # a magic number, and so the built-in default can be improved without every
   # existing install being pinned to whatever today's value happens to be.
   max_output_tokens: "int(256,32768)?"
+  # Both absent from `options:` for the same reason as max_output_tokens: unset
+  # means "Nives decides", which today is the list of entities exposed to Assist.
+  layout_from_exposed: "bool?"
+  layout_domains: "str?"
   log_level: "list(debug|info|warn|error)"

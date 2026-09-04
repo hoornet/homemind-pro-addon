@@ -61,6 +61,20 @@ configuration:
       finish, which is most likely when you ask about several sensors at once or
       over a long period. Longer answers cost a little more. Spoken answers are
       not affected and stay short, because they are read out loud.
+  layout_from_exposed:
+    name: Room map from exposed entities
+    description: >-
+      On by default. The room map Nives keeps of your home lists the entities you
+      have exposed to Assist (Settings, Voice assistants, Expose), which is what
+      Home Assistant's own assistant sees too. Turn it off to list entities by
+      type instead, as before. Either way, Nives can still find and control any
+      entity by name; this only decides which ones appear in the map.
+  layout_domains:
+    name: Room map entity types
+    description: >-
+      Advanced. Which entity types go in the room map when it is not built from
+      exposed entities: a comma-separated list such as light,switch,climate,sensor,
+      or "all" for every entity in the house. Leave empty for a sensible default.
   log_level:
     name: Log Level
     description: >-

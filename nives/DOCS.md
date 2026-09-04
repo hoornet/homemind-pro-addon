@@ -160,6 +160,8 @@ curl -H "Authorization: Bearer <token>" http://<addon-host>:3100/api/chat ...
 |--------|-------------|
 | Custom Prompt | The assistant's personality — what you write replaces the default persona outright (e.g. "You are HAL 9000, the calm and precise computer from 2001"). This is the one place to set it; it applies once the add-on restarts. Leave empty for the default. |
 | Maximum Answer Length | How much room one written answer gets, in tokens. Leave it empty and Nives chooses. Raise it if long answers stop before they finish, which is most likely when you ask about several sensors at once or over a long period. Longer answers cost a little more. Spoken answers are not affected. |
+| Room map from exposed entities | On by default. Nives keeps a room map of your home, and it lists the entities you have exposed to Assist (Settings, Voice assistants, Expose), the same set Home Assistant's own assistant sees. Turn it off to list entities by type instead. Either way Nives can still find and control any entity by name; this only decides which ones are in the map. |
+| Room map entity types | Advanced. Which entity types go in the room map when it is not built from exposed entities: a comma-separated list such as `light,switch,climate,sensor`, or `all` for every entity in the house. Leave empty for a sensible default. |
 | Log Level | `debug`, `info`, `warn`, or `error`. Use `debug` for troubleshooting. |
 
 ---
