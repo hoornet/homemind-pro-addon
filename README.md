@@ -18,8 +18,19 @@ Talk to your home in plain language, by voice or text through HA Assist, and Niv
 
 > Tell it once. *"100 ppm is normal for my NOx sensor"*, *"bedroom lights should go to 30% in the evening"*, *"call the WLED strip 'main kitchen light'"*. It still knows next time.
 
+## Ask it why, not just what
+
+<p align="center">
+  <img src="assets/voc-analysis.png" alt="Assist screenshot: asked to analyse the daily VOC spike, Nives compares VOC with PM2.5, PM10, NOx, humidity, temperature and the fan automation over the day, rules out the sensor, the fan and the lights, and points to cooking in the downstairs kitchen" width="620">
+</p>
+
+One question, no hints about where to look. Nives pulled the day's VOC history, then went looking on its own: PM2.5, PM10, NOx, humidity, temperature and the bathroom fan automation, six histories in a single round. It ruled out sensor drift, moisture, the fan and the lights, ranked what was left, and named the downstairs kitchen because it remembered being told about that pattern before. Then it suggested how to confirm the theory.
+
+Reading one sensor back to you is easy. Reasoning across all of them, over the whole day, is what you actually wanted when you asked.
+
 ## What you get
 
+- **Reasons across your sensors, not just one.** Ask why the air got worse or whether the solar panels came out ahead today, and Nives fetches the histories it needs, compares them, and tells you what it ruled out and why. See [the VOC example](#ask-it-why-not-just-what) above.
 - **Persistent memory.** Preferences, routines, sensor baselines, device nicknames. Survives restarts.
 - **Forgets when you ask it to.** *"Forget that my canary word is bumblebee."* It quotes the exact memory back and waits for your yes before deleting anything.
 - **Voice and text through Home Assistant Assist.** Any Assist pipeline works, satellites included. Spoken answers are written for the ear rather than the page, and when Nives ends on a question it asks Home Assistant to reopen the microphone, by the same rule HA's own agents use, so you can just answer.
