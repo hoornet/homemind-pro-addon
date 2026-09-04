@@ -36,7 +36,9 @@ const ConfigSchema = z
     haSkipTlsVerify: z
       .string()
       .transform((v) => v === "true")
-      .default("false"),
+      // zod 4: .default() hands the value back untouched, so "false" would come
+      // out as a truthy string. .prefault() runs it through the transform.
+      .prefault("false"),
 
     // Memory - Shodh (required)
     shodhUrl: z.string().url("SHODH_URL is required"),
@@ -65,7 +67,7 @@ const ConfigSchema = z
     layoutFromExposed: z
       .string()
       .transform((v) => v !== "false")
-      .default("true"),
+      .prefault("true"),
 
     // App / API access
     corsOrigins: z.string().optional(), // Comma-separated origins, e.g. "http://localhost:5173,https://app.example.com"
@@ -152,7 +154,7 @@ export function loadConfig(): Config {
 
   if (!result.success) {
     console.error("Configuration errors:");
-    for (const error of result.error.errors) {
+    for (const error of result.error.issues) {
       console.error(`  - ${error.path.join(".")}: ${error.message}`);
     }
     process.exit(1);

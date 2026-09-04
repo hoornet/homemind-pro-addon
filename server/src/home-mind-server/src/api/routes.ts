@@ -117,7 +117,7 @@ export function createRouter(
       if (!parsed.success) {
         return res.status(400).json({
           error: "Invalid request",
-          details: parsed.error.errors,
+          details: parsed.error.issues,
         });
       }
 
@@ -150,7 +150,7 @@ export function createRouter(
       if (!parsed.success) {
         return res.status(400).json({
           error: "Invalid request",
-          details: parsed.error.errors,
+          details: parsed.error.issues,
         });
       }
 
@@ -218,7 +218,7 @@ export function createRouter(
       if (!parsed.success) {
         return res.status(400).json({
           error: "Invalid request",
-          details: parsed.error.errors,
+          details: parsed.error.issues,
         });
       }
 
