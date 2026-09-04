@@ -107,9 +107,54 @@ function identityKey(toolName: string, input: Record<string, unknown>): string {
 }
 
 /**
+ * Words that carry no identity: the model adds and drops them freely when it
+ * rewords an alias ("Close bedroom window for VOC test" → "Reminder to close
+ * the bedroom window for the VOC test").
+ */
+const ALIAS_STOPWORDS = new Set([
+  "a", "an", "the", "to", "for", "of", "and", "or", "at", "in", "on", "with",
+  "my", "our", "your", "automation", "reminder", "remind", "me", "please",
+]);
+
+function aliasTokens(identity: string): Set<string> {
+  return new Set(
+    identity
+      .split(/[^a-z0-9]+/)
+      .filter((t) => t.length > 0 && !ALIAS_STOPWORDS.has(t))
+  );
+}
+
+/** Jaccard overlap of the words that carry identity, 0..1. */
+function aliasSimilarity(a: string, b: string): number {
+  const ta = aliasTokens(a);
+  const tb = aliasTokens(b);
+  if (ta.size === 0 || tb.size === 0) return 0;
+  let shared = 0;
+  for (const t of ta) if (tb.has(t)) shared++;
+  return shared / (ta.size + tb.size - shared);
+}
+
+/**
+ * How alike two create aliases must be to count as the same automation. The
+ * observed drift ("Close bedroom window for VOC test" → "…VOC spike test",
+ * "Reminder to close …") scores 0.8+; an on/off pair ("cooling on above 24" /
+ * "cooling off below 20") scores 0.14; an unrelated request scores 0.
+ */
+const ALIAS_MATCH_THRESHOLD = 0.5;
+
+/**
  * True if this same change was previewed for this conversation in an EARLIER turn
  * (so the user has since replied) — and consume that preview. Payload formatting
  * is intentionally NOT compared; update/delete are matched by entity_id.
+ *
+ * Create is matched by alias, and the alias turned out not to be perfectly
+ * stable either: live on 2026-09-04 the model previewed "Close bedroom window
+ * for VOC test", then confirmed under "Reminder to close bedroom window for VOC
+ * test", then "Close bedroom window for VOC spike test" — four previews, four
+ * yeses, nothing created. So when no slot matches the alias exactly, the
+ * nearest pending create from an earlier turn is taken if it is clearly the
+ * same automation by its content words. Two genuinely different pending
+ * creates (an on/off pair) stay apart because their words barely overlap.
  */
 export function isConfirmed(
   conversationId: string,
@@ -120,17 +165,68 @@ export function isConfirmed(
 ): boolean {
   const key = slotKey(conversationId, toolName, input, identityOverride);
   const entry = pending.get(key);
-  if (!entry) return false;
-  if (Date.now() - entry.createdAt > TTL_MS) {
-    pending.delete(key);
+  if (entry) {
+    if (Date.now() - entry.createdAt > TTL_MS) {
+      pending.delete(key);
+      return false;
+    }
+    // A later turn → a real user reply happened in between.
+    if (entry.turnId !== turnId) {
+      pending.delete(key);
+      return true;
+    }
     return false;
   }
-  // A later turn → a real user reply happened in between.
-  if (entry.turnId !== turnId) {
-    pending.delete(key);
+
+  if (toolName !== "create_automation" || identityOverride !== undefined) return false;
+
+  const wanted = normalizeAlias(input.alias);
+  const prefix = slotKey(conversationId, toolName, {}, "");
+  const now = Date.now();
+  let bestKey: string | undefined;
+  let bestScore = 0;
+  for (const [candidateKey, candidate] of pending) {
+    if (!candidateKey.startsWith(prefix)) continue;
+    if (now - candidate.createdAt > TTL_MS) {
+      pending.delete(candidateKey);
+      continue;
+    }
+    if (candidate.turnId === turnId) continue;
+    const score = aliasSimilarity(wanted, candidateKey.slice(prefix.length));
+    if (score > bestScore) {
+      bestScore = score;
+      bestKey = candidateKey;
+    }
+  }
+  if (bestKey !== undefined && bestScore >= ALIAS_MATCH_THRESHOLD) {
+    pending.delete(bestKey);
     return true;
   }
   return false;
+}
+
+/**
+ * Put a consumed confirmation back after the confirmed change FAILED to apply
+ * (Home Assistant rejected the payload, say). The user already said yes; the
+ * model's corrected retry, in this same turn or the next, must go straight
+ * through rather than start the preview dance again. Live on 2026-09-04: a
+ * confirmed create failed on a malformed `at`, the model fixed it and called
+ * again immediately, and got a fresh preview because the slot was gone.
+ *
+ * The slot is stored with an empty turn id, which no real turn equals, so the
+ * "earlier turn" rule passes for whichever turn retries.
+ */
+export function rearmConfirmation(
+  conversationId: string,
+  toolName: string,
+  input: Record<string, unknown>,
+  identityOverride?: string
+): void {
+  pending.set(slotKey(conversationId, toolName, input, identityOverride), {
+    conversationId,
+    turnId: "",
+    createdAt: Date.now(),
+  });
 }
 
 /** Record that a change was previewed (awaiting the user's confirmation). */

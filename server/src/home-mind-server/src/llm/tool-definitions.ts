@@ -144,7 +144,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         trigger: {
           type: "object",
           description:
-            "The trigger that starts the automation, as an HA trigger object or array of objects. Examples: time → {\"platform\":\"time\",\"at\":\"23:00:00\"}; sun → {\"platform\":\"sun\",\"event\":\"sunset\",\"offset\":\"-00:15:00\"}; state → {\"platform\":\"state\",\"entity_id\":\"binary_sensor.front_door\",\"to\":\"on\"}; numeric → {\"platform\":\"numeric_state\",\"entity_id\":\"sensor.temperature\",\"above\":25}.",
+            "The trigger that starts the automation, as an HA trigger object or array of objects. Examples: time → {\"platform\":\"time\",\"at\":\"23:00:00\"}; sun → {\"platform\":\"sun\",\"event\":\"sunset\",\"offset\":\"-00:15:00\"}; state → {\"platform\":\"state\",\"entity_id\":\"binary_sensor.front_door\",\"to\":\"on\"}; numeric → {\"platform\":\"numeric_state\",\"entity_id\":\"sensor.temperature\",\"above\":25}. A time trigger's \"at\" is a time of day ONLY (HH:MM:SS), never a date; for a one-off on a particular day keep \"at\" as the time and add a template condition on the date, e.g. {\"condition\":\"template\",\"value_template\":\"{{ now().strftime('%Y-%m-%d') == '2026-09-05' }}\"}.",
         },
         condition: {
           type: "object",

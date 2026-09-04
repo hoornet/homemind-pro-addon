@@ -354,6 +354,43 @@ describe("handleToolCall confirmation gate", () => {
     expect(second.success).toBe(true);
   });
 
+  it("replays the live 2026-09-04 loop: reworded aliases and a rejected payload, one yes each", async () => {
+    // Preview under one alias.
+    await handleToolCall(ha, "create_automation", createInput(), ctx("turn-A"));
+    // "yes" → the model renames it. Must apply, not re-preview.
+    const renamed = { ...createInput(), alias: "Reminder: kitchen lights at 20:00" };
+    const second = (await handleToolCall(ha, "create_automation", renamed, ctx("turn-B"))) as {
+      success?: boolean;
+    };
+    expect(second.success).toBe(true);
+    expect(ha.createAutomation).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the confirmation when Home Assistant rejects the confirmed payload, so the fixed retry applies", async () => {
+    await handleToolCall(ha, "create_automation", createInput(), ctx("turn-A"));
+    vi.mocked(ha.createAutomation).mockRejectedValueOnce(
+      new Error("HA API error 400: Message malformed: Expected HH:MM, HH:MM:SS at 'at[0]'")
+    );
+    const bad = { ...createInput(), trigger: { platform: "time", at: "2026-09-05 20:00:00" } };
+    const failed = (await handleToolCall(ha, "create_automation", bad, ctx("turn-B"))) as {
+      error?: string;
+      message?: string;
+      confirmation_required?: boolean;
+    };
+    expect(failed.error).toMatch(/malformed/);
+    expect(failed.message).toMatch(/still stands/);
+    expect(failed.confirmation_required).toBeUndefined();
+
+    // The corrected retry in the SAME turn goes straight through.
+    const retry = (await handleToolCall(ha, "create_automation", createInput(), ctx("turn-B"))) as {
+      success?: boolean;
+      confirmation_required?: boolean;
+    };
+    expect(retry.confirmation_required).toBeUndefined();
+    expect(retry.success).toBe(true);
+    expect(ha.createAutomation).toHaveBeenCalledTimes(2);
+  });
+
   it("commits a REFORMATTED create on a later-turn re-call (payload shape is not compared)", async () => {
     await handleToolCall(ha, "create_automation", createInput(), ctx("turn-A"));
     // Same intent, different shape than the preview → must still commit (this is the v2.1.11 fix).

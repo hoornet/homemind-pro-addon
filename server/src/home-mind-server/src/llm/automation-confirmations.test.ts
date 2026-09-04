@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   recordPreview,
   isConfirmed,
+  rearmConfirmation,
   clearConfirmation,
   describePending,
   previewNotes,
@@ -369,5 +370,91 @@ describe("identityOverride (content-identity gating for forget_memory)", () => {
   it("omitting the override preserves existing behavior for automation tools", () => {
     recordPreview(conv, "delete_automation", { entity_id: "automation.x" }, "turn-1");
     expect(isConfirmed(conv, "delete_automation", { entity_id: "automation.x" }, "turn-2")).toBe(true);
+  });
+});
+
+describe("alias drift between preview and confirmation (2026-09-04 live loop)", () => {
+  // The model previewed one alias and confirmed under another, three times in a
+  // row, so the alias-keyed slot never matched and nothing was ever created.
+  const conv = "conv-drift";
+  const create = (alias: string) => ({
+    alias,
+    trigger: { platform: "time", at: "17:00:00" },
+    action: { service: "notify.mobile_app_phone", data: { message: "close the window" } },
+  });
+
+  beforeEach(() => clearConfirmation(conv));
+
+  it("confirms a create whose alias was reworded but is clearly the same automation", () => {
+    recordPreview(conv, "create_automation", create("Close bedroom window for VOC test"), "t1");
+    expect(
+      isConfirmed(conv, "create_automation", create("Reminder to close bedroom window for VOC test"), "t2")
+    ).toBe(true);
+  });
+
+  it("confirms across a second rewording too, and is still single-use", () => {
+    recordPreview(conv, "create_automation", create("Close bedroom window for VOC test"), "t1");
+    expect(
+      isConfirmed(conv, "create_automation", create("Close bedroom window for VOC spike test"), "t2")
+    ).toBe(true);
+    expect(
+      isConfirmed(conv, "create_automation", create("Close bedroom window for VOC spike test"), "t3")
+    ).toBe(false);
+  });
+
+  it("does NOT confirm in the same turn even when the alias is close", () => {
+    recordPreview(conv, "create_automation", create("Close bedroom window for VOC test"), "t1");
+    expect(
+      isConfirmed(conv, "create_automation", create("Reminder to close bedroom window for VOC test"), "t1")
+    ).toBe(false);
+  });
+
+  it("keeps an on/off pair apart: confirming one half does not consume the other", () => {
+    recordPreview(conv, "create_automation", create("Cooling on above 24"), "t1");
+    recordPreview(conv, "create_automation", create("Cooling off below 20"), "t1");
+    expect(isConfirmed(conv, "create_automation", create("Cooling on above 24"), "t2")).toBe(true);
+    // The remaining slot is the OFF half; a reworded ON must not take it.
+    expect(isConfirmed(conv, "create_automation", create("Turn cooling on above 24"), "t2")).toBe(false);
+    expect(isConfirmed(conv, "create_automation", create("Cooling off below 20"), "t2")).toBe(true);
+  });
+
+  it("does NOT confirm an unrelated automation (the change-of-mind case that alias scoping exists for)", () => {
+    recordPreview(conv, "create_automation", create("Sunset porch light"), "t1");
+    expect(isConfirmed(conv, "create_automation", create("Heating off at 11pm"), "t2")).toBe(false);
+  });
+
+  it("prefers an exact alias match over a fuzzy one", () => {
+    recordPreview(conv, "create_automation", create("Bedroom light on at sunset"), "t1");
+    recordPreview(conv, "create_automation", create("Bedroom light on at sunset for guests"), "t1");
+    expect(isConfirmed(conv, "create_automation", create("Bedroom light on at sunset for guests"), "t2")).toBe(true);
+    expect(isConfirmed(conv, "create_automation", create("Bedroom light on at sunset"), "t2")).toBe(true);
+  });
+});
+
+describe("a confirmed change that failed to apply keeps its confirmation", () => {
+  const conv = "conv-rearm";
+  const create = (alias: string) => ({
+    alias,
+    trigger: { platform: "time", at: "17:00:00" },
+    action: { service: "notify.mobile_app_phone" },
+  });
+
+  beforeEach(() => clearConfirmation(conv));
+
+  it("lets the corrected retry through in the SAME turn after a rearm", () => {
+    recordPreview(conv, "create_automation", create("Window reminder"), "t1");
+    expect(isConfirmed(conv, "create_automation", create("Window reminder"), "t2")).toBe(true);
+    // ...Home Assistant rejects the payload...
+    rearmConfirmation(conv, "create_automation", create("Window reminder"));
+    expect(isConfirmed(conv, "create_automation", create("Window reminder"), "t2")).toBe(true);
+    // and it is consumed again by that success
+    expect(isConfirmed(conv, "create_automation", create("Window reminder"), "t3")).toBe(false);
+  });
+
+  it("the rearmed slot also accepts a reworded alias", () => {
+    recordPreview(conv, "create_automation", create("Window reminder"), "t1");
+    expect(isConfirmed(conv, "create_automation", create("Window reminder"), "t2")).toBe(true);
+    rearmConfirmation(conv, "create_automation", create("Window reminder"));
+    expect(isConfirmed(conv, "create_automation", create("Bedroom window reminder"), "t2")).toBe(true);
   });
 });

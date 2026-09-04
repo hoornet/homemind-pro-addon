@@ -10,6 +10,7 @@ import {
   describePending,
   pendingIdentities,
   clearIdentity,
+  rearmConfirmation,
 } from "./automation-confirmations.js";
 import {
   resolveForgetQuery,
@@ -449,9 +450,29 @@ export async function handleToolCall(
     const elapsed = Date.now() - start;
     const message = error instanceof Error ? error.message : String(error);
     console.log(`[tool] ${toolName} failed in ${elapsed}ms: ${message}`);
+
+    // A gated change only reaches Home Assistant once the user has confirmed
+    // it, and that confirmation was consumed on the way in. If applying it then
+    // failed, hand the confirmation back so the corrected retry applies without
+    // another preview — the user is not asked the same question twice for one
+    // yes.
+    if (GATED_AUTOMATION_TOOLS.has(toolName) && ctx?.conversationId) {
+      rearmConfirmation(ctx.conversationId, toolName, input);
+      return {
+        error: message,
+        message:
+          "Nothing was changed. The user's confirmation still stands: fix the payload and call this tool again with the corrected arguments — it will apply immediately, without another preview. Do NOT ask the user to confirm again.",
+      };
+    }
     return { error: message };
   }
 }
+
+const GATED_AUTOMATION_TOOLS = new Set([
+  "create_automation",
+  "update_automation",
+  "delete_automation",
+]);
 
 /**
  * Filter out garbage facts that the LLM extracted despite prompt instructions.
