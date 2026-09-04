@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.11
+
+- **Routine dependency housekeeping.** Updates to the SDKs the server uses to talk to AI providers, the HTTP and upload libraries behind its network calls, a type definition for the database library, and the build tool that assembles the add-on image. Nothing changes in how Nives works. Bundles server 0.15.7.
+
 ## 2.5.10
 
 - **Questions typed on the phone get full-length answers.** Anything asked through the Assist dialog in the Home Assistant app was being treated as a spoken request, so it got the short spoken ceiling and the brief voice persona. Long analytical questions from the phone could not finish at all, and the reply said the model had run out of room. Nives now treats a request as spoken only when it comes from a voice satellite such as Voice PE, which is when the answer is certain to be read aloud. Speaking into the phone's microphone now gets the written ceiling as well, so a long spoken answer is read out in full rather than cut short. **Restart Home Assistant once after this update.** Server unchanged (0.15.6).
