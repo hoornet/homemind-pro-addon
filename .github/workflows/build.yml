@@ -10,6 +10,12 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+# The job token gets only what the jobs need. Without this it inherits the
+# repository default, which CodeQL flags (actions/missing-workflow-permissions);
+# a job that needs more, such as pushing an image, says so on the job itself.
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test server
