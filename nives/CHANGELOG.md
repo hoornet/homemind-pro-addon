@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.12
+
+- **Forecasts, calendars and to-do lists are now within reach.** Some Home Assistant services answer with data instead of changing a device: the weather forecast, calendar events, to-do items, media search. Home Assistant expects such a call to say up front that it wants the answer, and Nives now does that on its own, using Home Assistant's service catalog to tell which services return data. "Will it rain tomorrow?" is answered from the forecast your weather integration provides rather than from today's cloud cover. Ordinary device commands are sent exactly as before. Thanks to @alcohen83 for the report and the interim recipe (#64). Bundles server 0.15.8.
+
 ## 2.5.11
 
 - **Routine dependency housekeeping.** Updates to the SDKs the server uses to talk to AI providers, the HTTP and upload libraries behind its network calls, a type definition for the database library, and the build tool that assembles the add-on image. Nothing changes in how Nives works. Bundles server 0.15.7.
