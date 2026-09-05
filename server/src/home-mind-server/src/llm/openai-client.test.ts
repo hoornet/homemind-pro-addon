@@ -919,3 +919,65 @@ describe("stream events: turn boundaries and the long-lookup heads-up", () => {
     expect(chunks).toEqual(["Hi there."]);
   });
 });
+
+describe("OpenRouter session affinity", () => {
+  const build = (baseUrl?: string) => {
+    const config = {
+      llmProvider: "openai",
+      llmModel: "gpt-test",
+      openaiApiKey: "k",
+      openaiBaseUrl: baseUrl,
+      memoryTokenLimit: 1500,
+      logLevel: "info",
+    } as Config;
+    const memory = { getFactsWithinTokenLimit: vi.fn().mockResolvedValue([]) } as unknown as IMemoryStore;
+    const conversations = {
+      getConversationHistory: vi.fn().mockReturnValue([]),
+      storeMessage: vi.fn(),
+    } as unknown as IConversationStore;
+    const scanner = {
+      refreshIfStale: vi.fn().mockResolvedValue(undefined),
+      hasProfiles: vi.fn().mockReturnValue(false),
+      formatCheatSheet: vi.fn().mockReturnValue(""),
+    } as unknown as DeviceScanner;
+    const topology = {
+      refreshIfStale: vi.fn().mockResolvedValue(undefined),
+      hasLayout: vi.fn().mockReturnValue(false),
+      formatSection: vi.fn().mockReturnValue(""),
+    } as unknown as TopologyScanner;
+    return new OpenAIChatEngine(config, memory, conversations, {} as IFactExtractor, {} as HomeAssistantClient, scanner, topology);
+  };
+  const reply = () =>
+    makeStream([
+      { choices: [{ delta: { content: "ok" }, finish_reason: null }], provider: "OpenAI" },
+      { choices: [{ delta: {}, finish_reason: "stop" }] },
+    ]);
+
+  beforeEach(() => {
+    resetTokenCapCache();
+    mockCreate.mockReset();
+  });
+
+  it("sends the conversation id as session_id when the endpoint is OpenRouter", async () => {
+    mockCreate.mockResolvedValueOnce(reply());
+    await build("https://openrouter.ai/api/v1").chat({ message: "hi", userId: "u", conversationId: "conv-9" });
+    expect(mockCreate.mock.calls[0][0].session_id).toBe("conv-9");
+  });
+
+  it("sends no session_id to any other OpenAI-compatible endpoint", async () => {
+    mockCreate.mockResolvedValueOnce(reply());
+    await build("http://homeassistant:11434/v1").chat({ message: "hi", userId: "u", conversationId: "conv-9" });
+    expect(mockCreate.mock.calls[0][0]).not.toHaveProperty("session_id");
+  });
+
+  it("names the serving provider in the turn log when the chunks carry it", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    mockCreate.mockResolvedValueOnce(reply());
+    const engine = build("https://openrouter.ai/api/v1");
+    (engine as unknown as { config: Config }).config.logLevel = "debug";
+    await engine.chat({ message: "hi", userId: "u", conversationId: "conv-9" });
+    const line = log.mock.calls.map((c) => String(c[0])).find((l) => l.includes("turn ok"));
+    expect(line).toContain("provider=OpenAI");
+    log.mockRestore();
+  });
+});

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.16
+
+- **Faster first words on Nives Cloud.** Each reply is a few short round trips to the model, and most of every round trip is waiting for the first token. The managed service now routes each request to whichever provider is answering fastest at that moment, rather than to the cheapest, which in tests cut that wait by a quarter to a half. Follow-up turns in one conversation also stay on the provider that already holds the conversation's prompt in its cache. Bring-your-own-key setups are unaffected.
+- The add-on log now shows, for every model turn, which provider served it and how much of the prompt came from cache, next to the token counts and the duration. Bundles server 0.15.12.
+
 ## 2.5.15
 
 - **You can see Nives working.** Until now the Assist dialog showed nothing until the complete answer arrived, and for a question over a week of sensor history that could be forty seconds of blank screen with no way to tell thinking from crashed. The answer is now written into the dialog as Nives produces it. And when a question is going to take a while, which Nives knows the moment the model asks for a day or more of history or for several sensors at once, a short heads-up appears within a few seconds, in your language, saying what she is reading. A quick request such as turning off a light gets no preamble, only the result as before. On a voice satellite the heads-up is shown but not read aloud; only the answer is. This needs Home Assistant 2025.3 or newer; on older versions the reply still arrives in one piece. **Restart Home Assistant once after this update.**

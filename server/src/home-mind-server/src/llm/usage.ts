@@ -15,6 +15,13 @@ export interface TokenUsage {
   completionTokens?: number;
   /** Hidden reasoning tokens, when the provider reports them. */
   reasoningTokens?: number;
+  /**
+   * Prompt tokens served from the provider's prompt cache, when reported.
+   * The static prefix (persona, tools, layout) is most of every prompt; a
+   * cache hit is what makes the second turn of a conversation cheap and fast,
+   * and a run of zeros here means the prefix is being rebuilt every turn.
+   */
+  cachedTokens?: number;
 }
 
 /** A number, or undefined for anything that is not one (providers vary). */
@@ -43,10 +50,19 @@ export function readUsage(raw: unknown): TokenUsage | undefined {
   // input/output for the same two numbers. Anthropic reports no separate
   // reasoning count, so that field stays undefined there, which is correct:
   // "unreported" is a different fact from "zero".
+  const promptDetails = (
+    typeof u.prompt_tokens_details === "object" && u.prompt_tokens_details !== null
+      ? u.prompt_tokens_details
+      : {}
+  ) as Record<string, unknown>;
+
   const usage: TokenUsage = {
     promptTokens: num(u.prompt_tokens) ?? num(u.input_tokens),
     completionTokens: num(u.completion_tokens) ?? num(u.output_tokens),
     reasoningTokens: num(details.reasoning_tokens),
+    // OpenAI-compatible: prompt_tokens_details.cached_tokens; Anthropic:
+    // cache_read_input_tokens on the same usage object.
+    cachedTokens: num(promptDetails.cached_tokens) ?? num(u.cache_read_input_tokens),
   };
 
   const known = Object.values(usage).some((v) => v !== undefined);
@@ -64,6 +80,7 @@ export function describeUsage(usage: TokenUsage | undefined): string {
       ? `reasoning=${usage.reasoningTokens}`
       : "reasoning=unreported"
   );
+  if (usage.cachedTokens !== undefined) parts.push(`cached=${usage.cachedTokens}`);
   return parts.join(" ");
 }
 

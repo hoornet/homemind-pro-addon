@@ -82,3 +82,26 @@ describe("spentBudgetOnReasoning", () => {
     expect(spentBudgetOnReasoning(undefined)).toBe(false);
   });
 });
+
+describe("cached prompt tokens", () => {
+  it("reads OpenAI-style prompt_tokens_details.cached_tokens", () => {
+    const usage = readUsage({
+      prompt_tokens: 8300,
+      completion_tokens: 40,
+      prompt_tokens_details: { cached_tokens: 7936 },
+    });
+    expect(usage?.cachedTokens).toBe(7936);
+    expect(describeUsage(usage)).toContain("cached=7936");
+  });
+
+  it("reads Anthropic-style cache_read_input_tokens", () => {
+    const usage = readUsage({ input_tokens: 1200, output_tokens: 40, cache_read_input_tokens: 1024 });
+    expect(usage?.cachedTokens).toBe(1024);
+  });
+
+  it("says nothing about the cache when the provider did not report it", () => {
+    const usage = readUsage({ prompt_tokens: 100, completion_tokens: 5 });
+    expect(usage?.cachedTokens).toBeUndefined();
+    expect(describeUsage(usage)).not.toContain("cached=");
+  });
+});

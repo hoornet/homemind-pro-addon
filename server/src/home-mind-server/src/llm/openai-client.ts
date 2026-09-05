@@ -154,7 +154,7 @@ export class OpenAIChatEngine implements IChatEngine {
 
     // 5. Stream and handle tool call loop
     events.onTurn?.();
-    let result = await this.streamCompletion(messages, isVoice, onChunk);
+    let result = await this.streamCompletion(messages, isVoice, onChunk, false, conversationId);
 
     let iterations = 0;
     while (result.finishReason === "tool_calls" && result.toolCalls.length > 0) {
@@ -226,7 +226,7 @@ export class OpenAIChatEngine implements IChatEngine {
         );
       }
       events.onTurn?.();
-      result = await this.streamCompletion(messages, isVoice, onChunk, forceAnswer);
+      result = await this.streamCompletion(messages, isVoice, onChunk, forceAnswer, conversationId);
       if (forceAnswer) break;
     }
 
@@ -321,11 +321,17 @@ export class OpenAIChatEngine implements IChatEngine {
     return this.config.maxOutputTokens ?? (isVoice ? VOICE_OUTPUT_CAP : WRITTEN_OUTPUT_CAP);
   }
 
+  /** True when the endpoint is OpenRouter, where its own request fields apply. */
+  private isOpenRouter(): boolean {
+    return /openrouter\.ai/i.test(this.config.openaiBaseUrl ?? "");
+  }
+
   private async streamCompletion(
     messages: OpenAI.ChatCompletionMessageParam[],
     isVoice: boolean,
     onChunk?: StreamCallback,
-    disableTools = false
+    disableTools = false,
+    sessionId?: string
   ): Promise<{
     text: string;
     finishReason: string | null;
@@ -348,12 +354,20 @@ export class OpenAIChatEngine implements IChatEngine {
         // usage at all, which is why a cap being spent entirely on reasoning
         // looked identical to a prompt being too large.
         stream_options: { include_usage: true },
+        // OpenRouter only: a stable session id pins the follow-up turns of one
+        // conversation to the provider endpoint that already holds the warm
+        // prompt cache, instead of re-balancing every turn. Other endpoints
+        // reject unknown fields, so it is not sent to them.
+        ...(this.isOpenRouter() && sessionId ? { session_id: sessionId } : {}),
       })
     );
 
     let text = "";
     let finishReason: string | null = null;
     let usage: TokenUsage | undefined;
+    // OpenRouter names the provider that served the request on every chunk.
+    // Which one it was is the difference between a 1 s and a 3 s first token.
+    let provider: string | undefined;
 
     // Accumulate tool calls from streamed deltas, indexed by position
     const toolCallAccumulator = new Map<
@@ -365,6 +379,8 @@ export class OpenAIChatEngine implements IChatEngine {
       // The usage chunk arrives last and carries no choices, so read it before
       // the guard below skips it.
       if (chunk.usage) usage = readUsage(chunk.usage);
+      const served = (chunk as { provider?: unknown }).provider;
+      if (typeof served === "string" && served) provider = served;
 
       const choice = chunk.choices[0];
       if (!choice) continue;
@@ -424,7 +440,7 @@ export class OpenAIChatEngine implements IChatEngine {
       console.warn(
         `[llm] output cap reached: cap=${cap} ${describeUsage(usage)} ` +
           `visible_chars=${text.length} tool_calls=${toolCalls.length} ` +
-          `model=${this.config.llmModel}`
+          `model=${this.config.llmModel}${provider ? ` provider=${provider}` : ""}`
       );
     } else if (this.config.logLevel === "debug") {
       // Knowing what a *successful* turn cost is what tells you how close the
@@ -433,7 +449,7 @@ export class OpenAIChatEngine implements IChatEngine {
       console.log(
         `[llm] turn ok: cap=${cap} ${describeUsage(usage)} ` +
           `finish=${finishReason ?? "none"} tool_calls=${toolCalls.length} ` +
-          `ms=${Date.now() - startedAt}`
+          `ms=${Date.now() - startedAt}${provider ? ` provider=${provider}` : ""}`
       );
     }
 
