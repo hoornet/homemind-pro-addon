@@ -795,3 +795,127 @@ describe("OpenAIChatEngine", () => {
     });
   });
 });
+
+describe("stream events: turn boundaries and the long-lookup heads-up", () => {
+  // The bare-function form of the second argument is the old API; these use
+  // the events object. Both are accepted.
+  let engine: OpenAIChatEngine;
+
+  const toolCallStream = (name: string, args: Record<string, unknown>, text?: string) =>
+    makeStream([
+      ...(text ? [{ choices: [{ delta: { content: text }, finish_reason: null }] }] : []),
+      {
+        choices: [
+          {
+            delta: {
+              tool_calls: [
+                { index: 0, id: "c1", function: { name, arguments: JSON.stringify(args) } },
+              ],
+            },
+            finish_reason: null,
+          },
+        ],
+      },
+      { choices: [{ delta: {}, finish_reason: "tool_calls" }] },
+    ]);
+  const answerStream = (text: string) =>
+    makeStream([
+      { choices: [{ delta: { content: text }, finish_reason: null }] },
+      { choices: [{ delta: {}, finish_reason: "stop" }] },
+    ]);
+  const weekAgo = () => new Date(Date.now() - 7 * 86400000).toISOString();
+
+  beforeEach(() => {
+    resetTokenCapCache();
+    mockCreate.mockReset();
+    vi.mocked(handleToolCall).mockReset().mockResolvedValue({ kind: "raw", points: [] });
+    const config = {
+      llmProvider: "openai",
+      llmModel: "gpt-test",
+      openaiApiKey: "k",
+      memoryTokenLimit: 1500,
+      logLevel: "info",
+    } as Config;
+    const memory = { getFactsWithinTokenLimit: vi.fn().mockResolvedValue([]) } as unknown as IMemoryStore;
+    const conversations = {
+      getConversationHistory: vi.fn().mockReturnValue([]),
+      storeMessage: vi.fn(),
+    } as unknown as IConversationStore;
+    const scanner = {
+      refreshIfStale: vi.fn().mockResolvedValue(undefined),
+      hasProfiles: vi.fn().mockReturnValue(false),
+      formatCheatSheet: vi.fn().mockReturnValue(""),
+    } as unknown as DeviceScanner;
+    const topology = {
+      refreshIfStale: vi.fn().mockResolvedValue(undefined),
+      hasLayout: vi.fn().mockReturnValue(false),
+      formatSection: vi.fn().mockReturnValue(""),
+    } as unknown as TopologyScanner;
+    engine = new OpenAIChatEngine(
+      config,
+      memory,
+      conversations,
+      {} as IFactExtractor,
+      {} as HomeAssistantClient,
+      scanner,
+      topology
+    );
+  });
+
+  it("sends the heads-up before a week-long history batch the model did not announce itself", async () => {
+    mockCreate
+      .mockResolvedValueOnce(toolCallStream("get_history", { entity_id: "sensor.voc", start_time: weekAgo() }))
+      .mockResolvedValueOnce(answerStream("VOC peaks every evening."));
+    const events: string[] = [];
+    const result = await engine.chat(
+      { message: "analyse VOC", userId: "u" },
+      {
+        onTurn: () => events.push("turn"),
+        onStatus: (t) => events.push(`status:${t}`),
+        onChunk: (t) => events.push(`chunk:${t}`),
+      }
+    );
+    expect(events).toEqual([
+      "turn",
+      "status:Give me a moment. I'm reading 7 days of history from one sensor.",
+      "turn",
+      "chunk:VOC peaks every evening.",
+    ]);
+    // The heads-up is not part of the reply.
+    expect(result.response).toBe("VOC peaks every evening.");
+  });
+
+  it("stays quiet when the model wrote its own sentence before the batch", async () => {
+    mockCreate
+      .mockResolvedValueOnce(
+        toolCallStream("get_history", { entity_id: "sensor.voc", start_time: weekAgo() }, "Give me a moment, reading a week of VOC.")
+      )
+      .mockResolvedValueOnce(answerStream("Done."));
+    const events: string[] = [];
+    await engine.chat(
+      { message: "analyse VOC", userId: "u" },
+      { onStatus: (t) => events.push(`status:${t}`), onChunk: (t) => events.push(`chunk:${t}`) }
+    );
+    expect(events).toEqual(["chunk:Give me a moment, reading a week of VOC.", "chunk:Done."]);
+  });
+
+  it("never sends a heads-up for a quick action", async () => {
+    mockCreate
+      .mockResolvedValueOnce(toolCallStream("call_service", { domain: "light", service: "turn_off", entity_id: "light.kitchen" }))
+      .mockResolvedValueOnce(answerStream("The kitchen light is off."));
+    const status: string[] = [];
+    const result = await engine.chat(
+      { message: "turn off the kitchen light", userId: "u" },
+      { onStatus: (t) => status.push(t) }
+    );
+    expect(status).toEqual([]);
+    expect(result.response).toBe("The kitchen light is off.");
+  });
+
+  it("still accepts a bare onChunk function", async () => {
+    mockCreate.mockResolvedValueOnce(answerStream("Hi there."));
+    const chunks: string[] = [];
+    await engine.chat({ message: "hi", userId: "u" }, (c) => chunks.push(c));
+    expect(chunks).toEqual(["Hi there."]);
+  });
+});

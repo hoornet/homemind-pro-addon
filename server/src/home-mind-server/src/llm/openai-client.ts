@@ -10,6 +10,7 @@ import { TOOL_DEFINITIONS, toOpenAITools } from "./tool-definitions.js";
 import { randomUUID } from "node:crypto";
 import { handleToolCall, extractAndStoreFacts, type ToolContext } from "./tool-handler.js";
 import { withTokenCap } from "./token-cap.js";
+import { describeLongBatch } from "./long-task.js";
 import {
   readUsage,
   describeUsage,
@@ -20,9 +21,11 @@ import {
   VOICE_TRUNCATION_NOTICE,
   type TokenUsage,
 } from "./usage.js";
+import { toStreamEvents } from "./interface.js";
 import type {
   ChatRequest,
   ChatResponse,
+  ChatStreamEvents,
   ChatError,
   StreamCallback,
   IChatEngine,
@@ -81,10 +84,13 @@ export class OpenAIChatEngine implements IChatEngine {
 
   async chat(
     request: ChatRequest,
-    onChunk?: StreamCallback
+    streamArg?: StreamCallback | ChatStreamEvents
   ): Promise<ChatResponse> {
+    const events = toStreamEvents(streamArg);
+    const onChunk = events.onChunk;
     const { message, userId, conversationId, isVoice = false, customPrompt, language } = request;
     const toolsUsed: string[] = [];
+    let announced = false;
     const turnId = randomUUID(); // nonce for this turn — powers the automation confirmation gate
     // ONE shared context for the whole turn — forget_memory writes
     // suppressExtraction back onto it, so per-call literals would drop the flag.
@@ -147,6 +153,7 @@ export class OpenAIChatEngine implements IChatEngine {
     }
 
     // 5. Stream and handle tool call loop
+    events.onTurn?.();
     let result = await this.streamCompletion(messages, isVoice, onChunk);
 
     let iterations = 0;
@@ -159,6 +166,20 @@ export class OpenAIChatEngine implements IChatEngine {
         content: result.text || null,
         tool_calls: result.toolCalls,
       });
+
+      // The batch is known and nothing has run yet: this is the one moment to
+      // warn the person waiting that it will take a while. If the model wrote
+      // a sentence of its own before the calls, that sentence has already been
+      // streamed and is the warning; otherwise the server's own goes out.
+      if (!announced) {
+        const heads = describeLongBatch(
+          result.toolCalls.map((tc) => ({ name: tc.function.name, args: parseArgs(tc) }))
+        );
+        if (heads) {
+          announced = true;
+          if (result.text.trim() === "") events.onStatus?.(heads);
+        }
+      }
 
       // Execute all tool calls in parallel
       const toolPromises = result.toolCalls.map(async (tc: FunctionToolCall) => {
@@ -204,6 +225,7 @@ export class OpenAIChatEngine implements IChatEngine {
           `[llm] tool loop hit ${MAX_TOOL_ITERATIONS} iterations — forcing a final answer`
         );
       }
+      events.onTurn?.();
       result = await this.streamCompletion(messages, isVoice, onChunk, forceAnswer);
       if (forceAnswer) break;
     }
@@ -311,6 +333,7 @@ export class OpenAIChatEngine implements IChatEngine {
     usage?: TokenUsage;
   }> {
     const cap = this.maxOutputTokens(isVoice);
+    const startedAt = Date.now();
     const stream = await withTokenCap(this.config.llmModel, cap, (capParam) =>
       this.client.chat.completions.create({
         model: this.config.llmModel,
@@ -409,10 +432,21 @@ export class OpenAIChatEngine implements IChatEngine {
       // already went wrong and nothing about the margin on the rest.
       console.log(
         `[llm] turn ok: cap=${cap} ${describeUsage(usage)} ` +
-          `finish=${finishReason ?? "none"} tool_calls=${toolCalls.length}`
+          `finish=${finishReason ?? "none"} tool_calls=${toolCalls.length} ` +
+          `ms=${Date.now() - startedAt}`
       );
     }
 
     return { text, finishReason, toolCalls, usage };
+  }
+}
+
+/** Tool-call arguments as an object; `{}` when they are not valid JSON. */
+function parseArgs(tc: FunctionToolCall): Record<string, unknown> {
+  try {
+    const parsed = tc.function.arguments ? JSON.parse(tc.function.arguments) : {};
+    return typeof parsed === "object" && parsed !== null ? parsed : {};
+  } catch {
+    return {};
   }
 }

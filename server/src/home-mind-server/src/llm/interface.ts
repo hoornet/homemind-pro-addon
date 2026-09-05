@@ -47,9 +47,38 @@ export interface ChatResponse {
 
 export type StreamCallback = (chunk: string) => void;
 
+/**
+ * What a caller can watch while a reply is produced. A bare `onChunk`
+ * function is the historical form and is still accepted everywhere a
+ * ChatStreamEvents is; `toStreamEvents` normalizes the two.
+ */
+export interface ChatStreamEvents {
+  /** Text of the reply as the model writes it, every turn included. */
+  onChunk?: StreamCallback;
+  /**
+   * A new assistant message begins: one per model turn. The text before a
+   * batch of tool calls and the answer after it are different messages, and a
+   * caller that renders them needs the seam.
+   */
+  onTurn?: () => void;
+  /**
+   * The server's own heads-up, sent before a batch of tools that will take a
+   * while when the model wrote nothing of its own first. Not part of the
+   * reply and never stored; a caller may show it and move on.
+   */
+  onStatus?: (text: string) => void;
+}
+
+export function toStreamEvents(
+  arg: StreamCallback | ChatStreamEvents | undefined
+): ChatStreamEvents {
+  if (!arg) return {};
+  return typeof arg === "function" ? { onChunk: arg } : arg;
+}
+
 // Provider interfaces
 export interface IChatEngine {
-  chat(request: ChatRequest, onChunk?: StreamCallback): Promise<ChatResponse>;
+  chat(request: ChatRequest, events?: StreamCallback | ChatStreamEvents): Promise<ChatResponse>;
 }
 
 export interface IFactExtractor {

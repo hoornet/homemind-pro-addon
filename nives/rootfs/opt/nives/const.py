@@ -15,6 +15,8 @@ DEFAULT_USER_ID = "default"
 DEFAULT_TIMEOUT = 120  # Claude with tool use can take 60+ seconds
 
 API_CHAT_ENDPOINT = "/api/chat"
+# Same request, answered as Server-Sent Events while the reply is produced.
+API_CHAT_STREAM_ENDPOINT = "/api/chat/stream"
 API_HEALTH_ENDPOINT = "/api/health"
 API_STT_ENDPOINT = "/api/stt"
 

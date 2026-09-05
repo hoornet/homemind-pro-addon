@@ -162,13 +162,25 @@ export function createRouter(
       res.setHeader("Connection", "keep-alive");
       res.flushHeaders();
 
-      // Stream chunks to client
-      const response = await llm.chat({
-        ...parsed.data,
-        customPrompt: parsed.data.customPrompt ?? defaultCustomPrompt,
-      }, (chunk: string) => {
-        res.write(`event: chunk\ndata: ${JSON.stringify({ text: chunk })}\n\n`);
-      });
+      // Stream to the client as the reply is produced. Three event kinds:
+      //   turn   — a new assistant message begins (one per model turn)
+      //   chunk  — text of the current message
+      //   status — the server's heads-up before a long batch of tool calls;
+      //            shown to the person waiting, never part of the reply
+      // followed by `done` with the complete response as /api/chat returns it.
+      const send = (event: string, data: unknown) =>
+        res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      const response = await llm.chat(
+        {
+          ...parsed.data,
+          customPrompt: parsed.data.customPrompt ?? defaultCustomPrompt,
+        },
+        {
+          onTurn: () => send("turn", {}),
+          onChunk: (chunk: string) => send("chunk", { text: chunk }),
+          onStatus: (text: string) => send("status", { text }),
+        }
+      );
 
       // Send final complete response
       res.write(`event: done\ndata: ${JSON.stringify(response)}\n\n`);

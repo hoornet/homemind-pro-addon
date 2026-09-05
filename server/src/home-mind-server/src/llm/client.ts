@@ -9,6 +9,8 @@ import { buildSystemPrompt, type CachedSystemPrompt } from "./prompts.js";
 import { HA_TOOLS } from "./tools.js";
 import { randomUUID } from "node:crypto";
 import { handleToolCall, extractAndStoreFacts, type ToolContext } from "./tool-handler.js";
+import { describeLongBatch } from "./long-task.js";
+import { toStreamEvents } from "./interface.js";
 import {
   readUsage,
   describeUsage,
@@ -20,6 +22,7 @@ import {
 import type {
   ChatRequest,
   ChatResponse,
+  ChatStreamEvents,
   ChatError,
   StreamCallback,
   IChatEngine,
@@ -70,10 +73,13 @@ export class LLMClient implements IChatEngine {
    */
   async chat(
     request: ChatRequest,
-    onChunk?: StreamCallback
+    streamArg?: StreamCallback | ChatStreamEvents
   ): Promise<ChatResponse> {
+    const events = toStreamEvents(streamArg);
+    const onChunk = events.onChunk;
     const { message, userId, conversationId, isVoice = false, customPrompt, language } = request;
     const toolsUsed: string[] = [];
+    let announced = false;
     const turnId = randomUUID(); // nonce for this turn — powers the automation confirmation gate
     // ONE shared context for the whole turn — forget_memory writes
     // suppressExtraction back onto it, so per-call literals would drop the flag.
@@ -141,6 +147,7 @@ export class LLMClient implements IChatEngine {
       this.conversations.storeMessage(conversationId, userId, "user", message);
     }
 
+    events.onTurn?.();
     let response = await this.streamMessage(
       systemPrompt,
       messages,
@@ -161,6 +168,21 @@ export class LLMClient implements IChatEngine {
       const toolBlocks = assistantContent.filter(
         (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
       );
+
+      // Same moment as in the OpenAI engine: the batch is known, nothing has
+      // run, and the person waiting can be told it will take a while.
+      if (!announced) {
+        const heads = describeLongBatch(
+          toolBlocks.map((b) => ({ name: b.name, args: b.input as Record<string, unknown> }))
+        );
+        if (heads) {
+          announced = true;
+          const wrote = assistantContent.some(
+            (b): b is Anthropic.TextBlock => b.type === "text" && b.text.trim() !== ""
+          );
+          if (!wrote) events.onStatus?.(heads);
+        }
+      }
 
       const toolPromises = toolBlocks.map(async (block) => {
         toolsUsed.push(block.name);
@@ -190,6 +212,7 @@ export class LLMClient implements IChatEngine {
           `[llm] tool loop hit ${MAX_TOOL_ITERATIONS} iterations — forcing a final answer`
         );
       }
+      events.onTurn?.();
       response = await this.streamMessage(
         systemPrompt,
         messages,
@@ -286,6 +309,7 @@ export class LLMClient implements IChatEngine {
     disableTools = false
   ): Promise<Anthropic.Message> {
     const cap = this.maxOutputTokens(isVoice);
+    const startedAt = Date.now();
     const stream = this.anthropic.messages.stream({
       model: this.config.llmModel,
       max_tokens: cap,
@@ -323,7 +347,8 @@ export class LLMClient implements IChatEngine {
     } else if (this.config.logLevel === "debug") {
       console.log(
         `[llm] turn ok: cap=${cap} ${describeUsage(usage)} ` +
-          `finish=${message.stop_reason ?? "none"} tool_calls=${toolUses}`
+          `finish=${message.stop_reason ?? "none"} tool_calls=${toolUses} ` +
+          `ms=${Date.now() - startedAt}`
       );
     }
 

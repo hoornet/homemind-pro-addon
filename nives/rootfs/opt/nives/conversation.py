@@ -13,6 +13,16 @@ from homeassistant.components.conversation import (
     ConversationInput,
     ConversationResult,
 )
+
+# Streamed replies need the chat log (Home Assistant 2025.3+). On an older
+# Core the whole reply still arrives in one piece through the legacy path.
+try:
+    from homeassistant.components.conversation import ChatLog
+
+    STREAMING_SUPPORTED = hasattr(ChatLog, "async_add_delta_content_stream")
+except ImportError:  # pragma: no cover - older cores
+    ChatLog = None  # type: ignore[assignment,misc]
+    STREAMING_SUPPORTED = False
 from homeassistant.const import MATCH_ALL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, intent
@@ -31,14 +41,20 @@ except ImportError:  # very old cores
 from . import NivesConfigEntry
 from .const import (
     API_CHAT_ENDPOINT,
+    API_CHAT_STREAM_ENDPOINT,
     DEFAULT_TIMEOUT,
 )
+from .stream import DeltaBuilder, SseParser
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class UsageLimitError(Exception):
     """Raised when the Nives server returns HTTP 402 (usage limit reached)."""
+
+
+class StreamUnavailable(Exception):
+    """The server has no streaming endpoint; use the single-request path."""
 
 
 async def async_setup_entry(
@@ -79,7 +95,227 @@ class NivesConversationAgent(ConversationEntity):
         return MATCH_ALL
 
     async def async_process(self, user_input: ConversationInput) -> ConversationResult:
-        """Process a conversation input and return a response."""
+        """Answer, streaming into the chat log where the Core supports it."""
+        if not STREAMING_SUPPORTED:
+            return await self._async_process_legacy(user_input)
+        # The base class opens the chat session and log and calls
+        # _async_handle_message with them.
+        return await super().async_process(user_input)
+
+    async def _async_handle_message(
+        self,
+        user_input: ConversationInput,
+        chat_log: ChatLog,
+    ) -> ConversationResult:
+        """Stream the reply into the chat log as the server produces it.
+
+        Until now the integration made one request and showed nothing until
+        the complete answer came back, which for a question over a week of
+        history meant a blank dialog for forty seconds and no way to tell
+        "thinking" from "crashed". The server now streams: the model's own
+        heads-up before a long lookup, or the server's, appears within a few
+        seconds as its own message, and the answer is written out as it is
+        produced. Home Assistant reads the LAST assistant message aloud, so
+        the heads-up is seen but not spoken.
+        """
+        _LOGGER.debug("Processing conversation input: %s", user_input.text)
+
+        data = self.entry.runtime_data
+        user_id = data.user_id
+        if user_input.context and user_input.context.user_id:
+            user_id = str(user_input.context.user_id)
+        conversation_id = chat_log.conversation_id
+        is_voice = getattr(user_input, "satellite_id", None) is not None
+
+        try:
+            async for _content in chat_log.async_add_delta_content_stream(
+                self.entity_id,
+                self._stream_deltas(
+                    api_url=data.api_url,
+                    api_token=data.api_token,
+                    message=user_input.text,
+                    user_id=user_id,
+                    conversation_id=conversation_id,
+                    language=user_input.language,
+                    is_voice=is_voice,
+                ),
+            ):
+                pass
+        except UsageLimitError:
+            return await self._usage_limit_result(user_input, conversation_id)
+        except aiohttp.ClientResponseError as err:
+            _LOGGER.error("Nives server returned an error: %s", err.message)
+            return self._error_result(
+                user_input,
+                conversation_id,
+                f"Sorry, the Nives server returned an error (HTTP {err.status}). "
+                "The add-on log has the details.",
+            )
+        except (aiohttp.ClientError, TimeoutError) as err:
+            _LOGGER.error("Error calling Nives API: %s", err)
+            return self._error_result(
+                user_input,
+                conversation_id,
+                "Sorry, I couldn't reach the Nives server right now.",
+            )
+
+        return self._result_from_chat_log(user_input, chat_log)
+
+    async def _stream_deltas(
+        self,
+        api_url: str,
+        api_token: str | None,
+        message: str,
+        user_id: str,
+        conversation_id: str,
+        language: str | None,
+        is_voice: bool,
+    ):
+        """Yield chat-log deltas from the server's event stream.
+
+        A server without the streaming endpoint (an older add-on paired with
+        a newer integration) answers 404 before anything is streamed, so the
+        single-request path can still be used and its reply yielded whole.
+        """
+        builder = DeltaBuilder()
+        try:
+            async for event, payload in self._stream_events(
+                api_url, api_token, message, user_id, conversation_id, language, is_voice
+            ):
+                for delta in builder.handle(event, payload):
+                    yield delta
+                if builder.error:
+                    if builder.error == "usage_limit_reached":
+                        raise UsageLimitError()
+                    raise aiohttp.ClientError(builder.error)
+        except StreamUnavailable:
+            text = await self._call_api(
+                api_url=api_url,
+                api_token=api_token,
+                message=message,
+                user_id=user_id,
+                conversation_id=conversation_id,
+                language=language,
+                is_voice=is_voice,
+            )
+            yield {"role": "assistant"}
+            yield {"content": text}
+            return
+
+        if builder.final is None and not builder.wrote_anything:
+            # The stream ended without a `done` event and without text: the
+            # connection dropped mid-reply. Say so rather than show nothing.
+            yield {"role": "assistant"}
+            yield {"content": "Sorry, I lost the connection to the Nives server mid-reply."}
+
+    async def _stream_events(
+        self,
+        api_url: str,
+        api_token: str | None,
+        message: str,
+        user_id: str,
+        conversation_id: str,
+        language: str | None,
+        is_voice: bool,
+    ):
+        """POST to the streaming endpoint and yield (event, data) pairs."""
+        url = f"{api_url}{API_CHAT_STREAM_ENDPOINT}"
+        payload: dict = {
+            "message": message,
+            "userId": user_id,
+            "isVoice": is_voice,
+            "conversationId": conversation_id,
+        }
+        if language:
+            payload["language"] = language
+        headers: dict = {"Accept": "text/event-stream"}
+        if api_token:
+            headers["Authorization"] = f"Bearer {api_token}"
+
+        async with self._session.post(
+            url,
+            json=payload,
+            headers=headers,
+            timeout=aiohttp.ClientTimeout(total=DEFAULT_TIMEOUT),
+        ) as response:
+            if response.status == 404:
+                raise StreamUnavailable()
+            if response.status == 402:
+                raise UsageLimitError()
+            if response.status != 200:
+                body = (await response.text())[:300]
+                raise aiohttp.ClientResponseError(
+                    response.request_info,
+                    response.history,
+                    status=response.status,
+                    message=f"API error {response.status}: {body}",
+                )
+            parser = SseParser()
+            async for raw in response.content:
+                for event in parser.feed(raw.decode("utf-8", errors="replace")):
+                    yield event
+            for event in parser.feed(""):
+                yield event
+
+    def _result_from_chat_log(
+        self, user_input: ConversationInput, chat_log: ChatLog
+    ) -> ConversationResult:
+        """Build the result the way Home Assistant's own agents do."""
+        intent_response = intent.IntentResponse(language=user_input.language)
+        last = chat_log.content[-1] if chat_log.content else None
+        text = getattr(last, "content", None) if getattr(last, "role", None) == "assistant" else None
+        intent_response.async_set_speech(text or "")
+        # Home Assistant reopens the satellite mic when the reply ends with a
+        # question mark; its own rule, computed from the same last message.
+        continue_conversation = bool(getattr(chat_log, "continue_conversation", False))
+        try:
+            return ConversationResult(
+                response=intent_response,
+                conversation_id=chat_log.conversation_id,
+                continue_conversation=continue_conversation,
+            )
+        except TypeError:
+            return ConversationResult(
+                response=intent_response,
+                conversation_id=chat_log.conversation_id,
+            )
+
+    async def _usage_limit_result(
+        self, user_input: ConversationInput, conversation_id: str | None
+    ) -> ConversationResult:
+        """Tell the user the balance is gone, once in the dialog and once as a notification."""
+        _LOGGER.warning("Nives usage limit reached")
+        await self.hass.services.async_call(
+            "persistent_notification",
+            "create",
+            {
+                "title": "Nives — Out of balance",
+                "message": (
+                    "Nives has used up its available balance. "
+                    "Top up at nives.house — or, if you bring your own "
+                    "key, add credit with your provider — and Nives "
+                    "picks right back up."
+                ),
+                "notification_id": "nives_usage_limit",
+            },
+        )
+        intent_response = intent.IntentResponse(language=user_input.language)
+        intent_response.async_set_speech(
+            "I'm out of balance. "
+            "Please top up at nives.house and I'll pick right back up."
+        )
+        return ConversationResult(response=intent_response, conversation_id=conversation_id)
+
+    def _error_result(
+        self, user_input: ConversationInput, conversation_id: str | None, text: str
+    ) -> ConversationResult:
+        """An error reply in the shape Home Assistant expects."""
+        intent_response = intent.IntentResponse(language=user_input.language)
+        intent_response.async_set_error(intent.IntentResponseErrorCode.UNKNOWN, text)
+        return ConversationResult(response=intent_response, conversation_id=conversation_id)
+
+    async def _async_process_legacy(self, user_input: ConversationInput) -> ConversationResult:
+        """One request, one complete reply: for Cores without a chat log."""
         _LOGGER.debug("Processing conversation input: %s", user_input.text)
 
         data = self.entry.runtime_data

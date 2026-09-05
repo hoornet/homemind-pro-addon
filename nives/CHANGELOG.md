@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.5.15
+
+- **You can see Nives working.** Until now the Assist dialog showed nothing until the complete answer arrived, and for a question over a week of sensor history that could be forty seconds of blank screen with no way to tell thinking from crashed. The answer is now written into the dialog as Nives produces it. And when a question is going to take a while, which Nives knows the moment the model asks for a day or more of history or for several sensors at once, a short heads-up appears within a few seconds, in your language, saying what she is reading. A quick request such as turning off a light gets no preamble, only the result as before. On a voice satellite the heads-up is shown but not read aloud; only the answer is. This needs Home Assistant 2025.3 or newer; on older versions the reply still arrives in one piece. **Restart Home Assistant once after this update.**
+- The add-on log now records how long each model turn took, next to the token counts, so a slow answer can be traced to the model or to Home Assistant. Bundles server 0.15.11.
+
 ## 2.5.14
 
 - **One yes is enough again.** Asking Nives to set up a one-off reminder could turn into a loop: every "yes" produced another preview and nothing was ever created. Two things were behind it. Nives recognises a confirmed automation by its name, and the model kept rewording the name between the preview and the confirmation ("Close bedroom window for VOC test", then "Reminder to close bedroom window for VOC test"), so each confirmation looked like a new request. Nives now treats a reworded name as the same automation when the words clearly match, while still keeping two genuinely different automations, such as an on/off pair, apart. And when a confirmed automation was rejected by Home Assistant because of a badly formed time, the confirmation was spent, so the corrected retry was previewed again; the confirmation now survives a failed attempt, and the retry applies at once. The model is also told that a time trigger takes a time of day only, with the date going in a condition, which is the mistake that triggered the rejection.
