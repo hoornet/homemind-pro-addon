@@ -116,7 +116,7 @@ export class OpenAIChatEngine implements IChatEngine {
       ? this.scanner.formatCheatSheet()
       : undefined;
     const homeLayout = this.topology.hasLayout() ? this.topology.formatSection() : undefined;
-    const systemPrompt = buildSystemPromptText(factContents, isVoice, customPrompt, deviceCheatSheet, homeLayout, language);
+    const systemPrompt = buildSystemPromptText(factContents, isVoice, customPrompt, deviceCheatSheet, homeLayout, language, this.config.ttsVoiceGender);
 
     // 3. Load conversation history
     const messages: OpenAI.ChatCompletionMessageParam[] = [

@@ -77,6 +77,12 @@ More languages will follow as each is tested. A voice is added only when it is
 genuinely good in that language — a bad voice is worse than none, and the local
 ones are free.
 
+> **The voice also settles the grammar.** Slovene changes the words a speaker
+> uses about themselves depending on whether the speaker is a woman or a man,
+> and so do Croatian, Czech, Polish, Russian, Hebrew and Arabic. Whichever voice
+> you pick decides that, in the written reply as well as the spoken one — even
+> if you have given Nives a personality of your own.
+
 > **A voice speaks one language.** Nives offers herself as a speaking choice
 > only for the language of the voice you picked, so a Slovene voice will not be
 > offered to an English pipeline. If you run Assist in more than one language,

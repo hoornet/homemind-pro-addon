@@ -4,6 +4,7 @@
 
 - **Nives can speak, in a voice that is actually Slovene.** Choose a **Voice** in the add-on's Configuration tab and Nives appears as a **Text-to-speech** option in your Assist pipeline (Settings → Voice assistants), reading her replies aloud. Two voices to start with, one female and one male, both native Slovene rather than a foreign voice sounding out the words — the difference is not subtle, and it is what took so long to find. Replies come back in about a second. Speaking is paid from the same balance as your conversations and is off until you pick a voice. More languages will follow as each one is tested; a voice ships only when it is genuinely good enough in that language.
 - Because a voice speaks one language, Nives now offers herself for speaking only in that voice's language, instead of accepting any language and reading it with the wrong sounds.
+- **Nives speaks about herself in the right grammatical gender.** Slovene and many other languages — Croatian, Czech, Polish, Russian, Hebrew, Arabic among them — change the words a speaker uses about themselves depending on whether the speaker is a woman or a man. The voice you choose now settles that, so the male voice says "Ugasnil sem" and the female one "Ugasnila sem", in the written reply as well as the spoken one. This also holds when you have given Nives a personality of your own in Custom Prompt: the voice decides, because the voice is what you hear.
 - Bundles server 0.15.13.
 
 ## 2.5.16

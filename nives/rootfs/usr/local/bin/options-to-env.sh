@@ -112,10 +112,15 @@ if [ "$LLM_MODE" = "cloud" ]; then
     # Slovene inflects the first person for the speaker's gender, so a female
     # voice saying "Ugasnil sem" is wrong in a way no listener will forgive.
     if [ "$CLOUD_VOICE" != "off" ] && [ -n "$PROXY_KEY" ]; then
+        # Gender travels with the voice on purpose. Slovene — like most Slavic
+        # languages, Hebrew and Arabic — inflects the first person for the
+        # speaker's own gender, so a man's voice saying "Ugasnila sem" is wrong
+        # in a way every native listener catches instantly. The voice decides,
+        # not the persona: the user hears the voice.
         case "$CLOUD_VOICE" in
-            slovene_female) TTS_VOICE_ID="sl-SI-PetraNeural"; TTS_LANG="sl" ;;
-            slovene_male)   TTS_VOICE_ID="sl-SI-RokNeural";   TTS_LANG="sl" ;;
-            *)              TTS_VOICE_ID=""; TTS_LANG="" ;;
+            slovene_female) TTS_VOICE_ID="sl-SI-PetraNeural"; TTS_LANG="sl"; TTS_GENDER="female" ;;
+            slovene_male)   TTS_VOICE_ID="sl-SI-RokNeural";   TTS_LANG="sl"; TTS_GENDER="male" ;;
+            *)              TTS_VOICE_ID=""; TTS_LANG=""; TTS_GENDER="" ;;
         esac
         if [ -n "$TTS_VOICE_ID" ]; then
             write_env "TTS_PROVIDER" "openai"
@@ -124,7 +129,8 @@ if [ "$LLM_MODE" = "cloud" ]; then
             write_env "TTS_MODEL" "${CLOUD_TTS_MODEL:-microsoft/mai-voice-2}"
             write_env "TTS_VOICE" "$TTS_VOICE_ID"
             write_env "TTS_LANGUAGE" "$TTS_LANG"
-            echo "[init] cloud voice: on (${CLOUD_VOICE})"
+            write_env "TTS_VOICE_GENDER" "$TTS_GENDER"
+            echo "[init] cloud voice: on (${CLOUD_VOICE}, ${TTS_GENDER})"
         else
             echo "[init] cloud voice: unknown choice '${CLOUD_VOICE}', staying silent"
         fi

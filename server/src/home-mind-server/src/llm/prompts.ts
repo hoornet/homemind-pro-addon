@@ -307,6 +307,33 @@ export function formatDateTimeWithOffset(): {
 }
 
 // Type for system prompt with caching
+/**
+ * One line telling the model which grammatical gender to speak about itself in.
+ *
+ * Only ever added when a voice is configured, because the voice is what makes a
+ * mismatch audible and because it is the half the listener cannot ignore. Many
+ * languages inflect the first person for the speaker's gender — Slovene,
+ * Croatian, Czech, Polish, Russian, Hebrew, Arabic and more — so without this a
+ * man's voice says "Ugasnila sem", which is not a subtle error to a native ear.
+ *
+ * The default persona needs no help: "Nives" is a feminine name and the model
+ * infers it unprompted. What this fixes is disagreement — a male voice under
+ * the default persona, or a persona of one gender under a voice of the other.
+ * The voice wins, because the voice is what the user hears.
+ */
+export function genderPointer(gender?: "female" | "male"): string {
+  if (!gender) return "";
+  const forms = gender === "male" ? '"Ugasnil sem"' : '"Ugasnila sem"';
+  const wrong = gender === "male" ? '"Ugasnila sem"' : '"Ugasnil sem"';
+  return (
+    `\n\nYou speak aloud with a ${gender} voice. ALWAYS refer to yourself using ` +
+    `${gender} forms in every language that inflects words for the speaker's own gender ` +
+    `(Slovene, Croatian, Serbian, Czech, Slovak, Polish, Russian, Ukrainian, Hebrew, Arabic ` +
+    `and others). In Slovene this means ${forms}, NEVER ${wrong}. This applies to your own ` +
+    `first-person statements only; it never changes how you address or describe the user.`
+  );
+}
+
 export type CachedSystemPrompt = Anthropic.MessageCreateParams["system"];
 
 /**
@@ -319,18 +346,17 @@ export function buildSystemPrompt(
   customPrompt?: string,
   deviceCheatSheet?: string,
   homeLayout?: string,
-  language?: string
+  language?: string,
+  voiceGender?: "female" | "male"
 ): CachedSystemPrompt {
   const factsText =
     facts.length > 0 ? facts.map((f) => `- ${f}`).join("\n") : "No memories yet.";
 
   const { display: dateTimeStr, iso: isoTimestamp, localMidnightIso } = formatDateTimeWithOffset();
 
-  const identity = customPrompt
-    ? customPrompt
-    : isVoice
-      ? DEFAULT_VOICE_IDENTITY
-      : DEFAULT_IDENTITY;
+  const identity =
+    (customPrompt ? customPrompt : isVoice ? DEFAULT_VOICE_IDENTITY : DEFAULT_IDENTITY) +
+    genderPointer(voiceGender);
 
   const instructions = isVoice ? VOICE_INSTRUCTIONS : SYSTEM_INSTRUCTIONS;
 
@@ -392,18 +418,17 @@ export function buildSystemPromptText(
   customPrompt?: string,
   deviceCheatSheet?: string,
   homeLayout?: string,
-  language?: string
+  language?: string,
+  voiceGender?: "female" | "male"
 ): string {
   const factsText =
     facts.length > 0 ? facts.map((f) => `- ${f}`).join("\n") : "No memories yet.";
 
   const { display: dateTimeStr, iso: isoTimestamp, localMidnightIso } = formatDateTimeWithOffset();
 
-  const identity = customPrompt
-    ? customPrompt
-    : isVoice
-      ? DEFAULT_VOICE_IDENTITY
-      : DEFAULT_IDENTITY;
+  const identity =
+    (customPrompt ? customPrompt : isVoice ? DEFAULT_VOICE_IDENTITY : DEFAULT_IDENTITY) +
+    genderPointer(voiceGender);
 
   const instructions = isVoice ? VOICE_INSTRUCTIONS : SYSTEM_INSTRUCTIONS;
 

@@ -89,6 +89,12 @@ const ConfigSchema = z
     // ("sl", "en"). Optional: unset means "unknown", and the HA integration
     // then falls back to advertising its full supported list.
     ttsLanguage: z.string().optional(),
+    // The gender of the configured voice. Not cosmetic: many languages inflect
+    // the first person for the speaker's gender, so this decides how the model
+    // must write about itself. Optional — unset means "don't say anything about
+    // it", which is right for text-only setups and for voices we haven't
+    // classified.
+    ttsVoiceGender: z.enum(["female", "male"]).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.llmProvider === "anthropic" && !data.anthropicApiKey) {
@@ -155,6 +161,7 @@ export function loadConfig(): Config {
     ttsModel: emptyToUndefined(process.env.TTS_MODEL),
     ttsVoice: emptyToUndefined(process.env.TTS_VOICE),
     ttsLanguage: emptyToUndefined(process.env.TTS_LANGUAGE),
+    ttsVoiceGender: emptyToUndefined(process.env.TTS_VOICE_GENDER),
   });
 
   if (!result.success) {
