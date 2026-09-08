@@ -85,6 +85,10 @@ const ConfigSchema = z
     ttsBaseUrl: z.string().url().optional(), // Custom OpenAI-compatible TTS endpoint
     ttsModel: z.string().default("tts-1"),
     ttsVoice: z.string().default("alloy"),
+    // The language the configured voice actually speaks, as a BCP-47 code
+    // ("sl", "en"). Optional: unset means "unknown", and the HA integration
+    // then falls back to advertising its full supported list.
+    ttsLanguage: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.llmProvider === "anthropic" && !data.anthropicApiKey) {
@@ -150,6 +154,7 @@ export function loadConfig(): Config {
     ttsBaseUrl: emptyToUndefined(process.env.TTS_BASE_URL),
     ttsModel: emptyToUndefined(process.env.TTS_MODEL),
     ttsVoice: emptyToUndefined(process.env.TTS_VOICE),
+    ttsLanguage: emptyToUndefined(process.env.TTS_LANGUAGE),
   });
 
   if (!result.success) {

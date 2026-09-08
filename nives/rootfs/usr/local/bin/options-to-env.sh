@@ -43,6 +43,7 @@ API_TOKEN=$(cat /data/.api_token)
 LLM_MODE=$(jq -r '.llm_mode // "cloud"' "$OPTIONS")
 PROXY_KEY=$(jq -r '.cloud.api_key // ""' "$OPTIONS")
 CLOUD_TRANSCRIPTION=$(jq -r '.cloud.transcription // false' "$OPTIONS")
+CLOUD_VOICE=$(jq -r '.cloud.voice // "off"' "$OPTIONS")
 LLM_PROVIDER=$(jq -r '.byok.provider // "anthropic"' "$OPTIONS")
 LLM_API_KEY=$(jq -r '.byok.api_key // ""' "$OPTIONS")
 LLM_MODEL=$(jq -r '.byok.model // ""' "$OPTIONS")
@@ -81,6 +82,7 @@ if [ "$LLM_MODE" = "cloud" ]; then
         # server-side later without an add-on release, the same way the chat
         # lineup already is. Absent today, which is why there is a default.
         CLOUD_STT_MODEL=$(printf '%s' "$CLOUD_CFG" | jq -r '.stt_model // ""' 2>/dev/null || true)
+        CLOUD_TTS_MODEL=$(printf '%s' "$CLOUD_CFG" | jq -r '.tts_model // ""' 2>/dev/null || true)
         echo "[init] cloud model: ${CLOUD_MODEL}"
     fi
     write_env "LLM_MODEL" "$CLOUD_MODEL"
@@ -96,6 +98,36 @@ if [ "$LLM_MODE" = "cloud" ]; then
         write_env "STT_BASE_URL" "https://openrouter.ai/api/v1"
         write_env "STT_MODEL" "${CLOUD_STT_MODEL:-openai/whisper-large-v3}"
         echo "[init] cloud transcription: on (${CLOUD_STT_MODEL:-openai/whisper-large-v3})"
+    fi
+
+    # --- Optional cloud voice (opt-in, default off) ---
+    # Speaking is billed to the same balance as chat, so it stays off until the
+    # user picks a voice. When off we write nothing: the server's default
+    # TTS_PROVIDER is "none" and /api/tts answers 501, which is what tells the
+    # integration not to offer a text-to-speech entity at all.
+    #
+    # A voice is language-specific, so each choice carries its language with it.
+    # The integration advertises exactly that language rather than offering
+    # itself for every pipeline, and the language also has to reach the model:
+    # Slovene inflects the first person for the speaker's gender, so a female
+    # voice saying "Ugasnil sem" is wrong in a way no listener will forgive.
+    if [ "$CLOUD_VOICE" != "off" ] && [ -n "$PROXY_KEY" ]; then
+        case "$CLOUD_VOICE" in
+            slovene_female) TTS_VOICE_ID="sl-SI-PetraNeural"; TTS_LANG="sl" ;;
+            slovene_male)   TTS_VOICE_ID="sl-SI-RokNeural";   TTS_LANG="sl" ;;
+            *)              TTS_VOICE_ID=""; TTS_LANG="" ;;
+        esac
+        if [ -n "$TTS_VOICE_ID" ]; then
+            write_env "TTS_PROVIDER" "openai"
+            write_env "TTS_API_KEY" "$PROXY_KEY"
+            write_env "TTS_BASE_URL" "https://openrouter.ai/api/v1"
+            write_env "TTS_MODEL" "${CLOUD_TTS_MODEL:-microsoft/mai-voice-2}"
+            write_env "TTS_VOICE" "$TTS_VOICE_ID"
+            write_env "TTS_LANGUAGE" "$TTS_LANG"
+            echo "[init] cloud voice: on (${CLOUD_VOICE})"
+        else
+            echo "[init] cloud voice: unknown choice '${CLOUD_VOICE}', staying silent"
+        fi
     fi
 else
     # BYOK mode: user provides their own API key

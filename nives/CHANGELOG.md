@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.0
+
+- **Nives can speak, in a voice that is actually Slovene.** Choose a **Voice** in the add-on's Configuration tab and Nives appears as a **Text-to-speech** option in your Assist pipeline (Settings → Voice assistants), reading her replies aloud. Two voices to start with, one female and one male, both native Slovene rather than a foreign voice sounding out the words — the difference is not subtle, and it is what took so long to find. Replies come back in about a second. Speaking is paid from the same balance as your conversations and is off until you pick a voice. More languages will follow as each one is tested; a voice ships only when it is genuinely good enough in that language.
+- Because a voice speaks one language, Nives now offers herself for speaking only in that voice's language, instead of accepting any language and reading it with the wrong sounds.
+- Bundles server 0.15.13.
+
 ## 2.5.16
 
 - **Faster first words on Nives Cloud.** Each reply is a few short round trips to the model, and most of every round trip is waiting for the first token. The managed service now routes each request to whichever provider is answering fastest at that moment, rather than to the cheapest, which in tests cut that wait by a quarter to a half. Follow-up turns in one conversation also stay on the provider that already holds the conversation's prompt in its cache. Bring-your-own-key setups are unaffected.

@@ -96,7 +96,10 @@ if (stt) {
 // Initialize TTS (optional — only when TTS_PROVIDER is set)
 const tts = createTtsService(config);
 if (tts) {
-  console.log(`  TTS: ${config.ttsProvider} / ${config.ttsModel} (voice: ${config.ttsVoice})`);
+  console.log(
+    `  TTS: ${config.ttsProvider} / ${config.ttsModel} (voice: ${config.ttsVoice}` +
+      `${config.ttsLanguage ? `, language: ${config.ttsLanguage}` : ""})`
+  );
 } else {
   console.log("  TTS: disabled");
 }
@@ -130,7 +133,7 @@ app.use((req, res, next) => {
 });
 
 // Mount API routes
-app.use("/api", createRouter(llm, memory, "shodh", version, config.customPrompt, conversations, stt ?? undefined, tts ?? undefined));
+app.use("/api", createRouter(llm, memory, "shodh", version, config.customPrompt, conversations, stt ?? undefined, tts ?? undefined, config.ttsLanguage));
 
 // Root endpoint
 app.get("/", (_req, res) => {

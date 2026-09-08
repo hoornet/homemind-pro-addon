@@ -47,6 +47,11 @@ UPDATE_CHECK_INTERVAL = timedelta(minutes=5)
 # cost of one small request against a service running on the same machine.
 CAPABILITY_CHECK_INTERVAL = timedelta(minutes=2)
 
+def _no_capabilities() -> dict:
+    """What a server that cannot be read is assumed to offer: nothing beyond
+    chat. Built fresh each time so a caller can never mutate a shared default."""
+    return {"stt": False, "tts": False, "tts_language": None}
+
 
 def _read_token_file(path: str) -> str | None:
     """Read the token the add-on left for us. Blocking — call in an executor."""
@@ -155,25 +160,29 @@ async def _async_setup_update_watch(hass: HomeAssistant, entry: ConfigEntry) -> 
 async def _async_setup_capability_watch(
     hass: HomeAssistant, entry: NivesConfigEntry
 ) -> None:
-    """Reload the entry when the server's transcription setting changes.
+    """Reload the entry when the server's listening or speaking settings change.
 
     Which platforms this entry runs is decided once, at setup, from a server
-    that may not have been up yet — and the user can switch transcription on or
-    off in the add-on at any time, which restarts the add-on but never touches
-    this config entry. Without this watch both directions strand the user:
-    switching on does nothing until a manual reload, switching off leaves a
-    speech-to-text entity selected in their pipeline that answers every
-    utterance with an error, and a server that was still booting when Home
-    Assistant started loses the entity for the whole session.
+    that may not have been up yet — and the user can switch transcription or a
+    voice on or off in the add-on at any time, which restarts the add-on but
+    never touches this config entry. Without this watch both directions strand
+    the user: switching on does nothing until a manual reload, switching off
+    leaves an entity selected in their pipeline that answers every request with
+    an error, and a server that was still booting when Home Assistant started
+    loses the entities for the whole session. A changed voice language counts
+    too, since it decides which languages the speaking entity offers.
     """
 
     async def _async_check(_now=None) -> None:
         data = entry.runtime_data
-        if (await _async_stt_enabled(hass, data.api_url)) == (
-            Platform.STT in data.platforms
+        caps = await _async_server_capabilities(hass, data.api_url)
+        if (
+            caps["stt"] == (Platform.STT in data.platforms)
+            and caps["tts"] == (Platform.TTS in data.platforms)
+            and caps["tts_language"] == data.tts_language
         ):
             return
-        _LOGGER.info("Nives transcription availability changed; reloading")
+        _LOGGER.info("Nives voice capabilities changed; reloading")
         hass.config_entries.async_schedule_reload(entry.entry_id)
 
     entry.async_on_unload(
@@ -181,11 +190,12 @@ async def _async_setup_capability_watch(
     )
 
 
-def _get_platforms(stt_enabled: bool = False) -> list[Platform]:
+def _get_platforms(stt_enabled: bool = False, tts_enabled: bool = False) -> list[Platform]:
     """Platforms to set up. AI Task is added only on HA versions that have it
     (2025.7+), so older cores keep the conversation agent and just skip it.
-    Speech-to-text is added only when the server is actually configured to
-    transcribe (see _async_stt_enabled)."""
+    Speech-to-text and text-to-speech are added only when the server is
+    actually configured to transcribe or to speak (see
+    _async_server_capabilities)."""
     platforms: list[Platform] = [Platform.CONVERSATION]
     ai_task_platform = getattr(Platform, "AI_TASK", None)
     if ai_task_platform is not None:
@@ -197,16 +207,20 @@ def _get_platforms(stt_enabled: bool = False) -> list[Platform]:
             _LOGGER.info("ai_task unavailable on this HA version; skipping AI Task entity")
     if stt_enabled:
         platforms.append(Platform.STT)
+    if tts_enabled:
+        platforms.append(Platform.TTS)
     return platforms
 
 
-async def _async_stt_enabled(hass: HomeAssistant, api_url: str) -> bool:
-    """Ask the server whether it is set up to transcribe.
+async def _async_server_capabilities(hass: HomeAssistant, api_url: str) -> dict:
+    """Ask the server what it is set up to do beyond chatting.
 
-    Health is public, so this needs no token. Any failure answers "no": the
-    add-on has to be reachable for the integration to work at all, and a
-    speech-to-text entity that cannot transcribe is worse than none, because
-    it still offers itself as a choice in the Assist pipeline.
+    Returns whether it can transcribe, whether it can speak, and the language
+    of the configured voice when it names one. Health is public, so this needs
+    no token. Any failure answers "no" to everything: the add-on has to be
+    reachable for the integration to work at all, and an entity that cannot do
+    its job is worse than none, because it still offers itself as a choice in
+    the Assist pipeline.
     """
     session = async_get_clientsession(hass)
     try:
@@ -215,12 +229,25 @@ async def _async_stt_enabled(hass: HomeAssistant, api_url: str) -> bool:
             timeout=aiohttp.ClientTimeout(total=10),
         ) as response:
             if response.status != 200:
-                return False
+                return _no_capabilities()
             body = await response.json()
     except (aiohttp.ClientError, TimeoutError, ValueError) as err:
         _LOGGER.debug("Could not read server capabilities: %s", err)
-        return False
-    return bool(body.get("stt"))
+        return _no_capabilities()
+    language = body.get("ttsLanguage")
+    return {
+        "stt": bool(body.get("stt")),
+        "tts": bool(body.get("tts")),
+        # Normalised to the bare code Assist matches against, so a server
+        # configured with "sl-SI" still lines up with a Slovene pipeline.
+        "tts_language": _base_language(language) if language else None,
+    }
+
+
+def _base_language(language: str) -> str | None:
+    """Reduce a language tag like "sl-SI" to the bare code Assist matches."""
+    code = str(language).replace("_", "-").split("-", 1)[0].strip().lower()
+    return code or None
 
 
 @dataclass
@@ -230,6 +257,9 @@ class NivesData:
     api_url: str
     api_token: str | None
     user_id: str
+    # Language of the voice the server is configured to speak with, when it
+    # names one. Decides which languages the text-to-speech entity offers.
+    tts_language: str | None = None
     # The platforms this entry actually set up. Recorded rather than recomputed
     # so unload takes down exactly what setup brought up, even if the server's
     # answer about transcription has changed in between.
@@ -242,12 +272,14 @@ type NivesConfigEntry = ConfigEntry[NivesData]
 async def async_setup_entry(hass: HomeAssistant, entry: NivesConfigEntry) -> bool:
     """Set up Nives from a config entry."""
     api_url = entry.data.get(CONF_API_URL, "").rstrip("/")
-    platforms = _get_platforms(await _async_stt_enabled(hass, api_url))
+    caps = await _async_server_capabilities(hass, api_url)
+    platforms = _get_platforms(caps["stt"], caps["tts"])
     entry.runtime_data = NivesData(
         api_url=api_url,
         api_token=await _async_resolve_token(hass, entry),
         user_id=entry.data.get(CONF_USER_ID, DEFAULT_USER_ID),
         platforms=platforms,
+        tts_language=caps["tts_language"],
     )
     await hass.config_entries.async_forward_entry_setups(entry, platforms)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))

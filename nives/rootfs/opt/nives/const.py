@@ -19,6 +19,7 @@ API_CHAT_ENDPOINT = "/api/chat"
 API_CHAT_STREAM_ENDPOINT = "/api/chat/stream"
 API_HEALTH_ENDPOINT = "/api/health"
 API_STT_ENDPOINT = "/api/stt"
+API_TTS_ENDPOINT = "/api/tts"
 
 # Transcription is quick compared with a tool-using chat turn, but it now sits
 # in front of one — the user is waiting on both — so this stays far below
@@ -50,6 +51,23 @@ STT_LANGUAGES = [
     # for a Norwegian pipeline; the match is exact, with no fallback to "no".
     "nb",
 ]
+
+# Synthesis happens after the reply is written, with the user already waiting
+# on the whole turn, so it fails fast: a voice that arrives half a minute late
+# is worse than no voice, because the pipeline has nothing to say meanwhile.
+TTS_TIMEOUT = 30
+
+# A spoken reply is a couple of sentences. Anything past this is a wall of text
+# that nobody wants read aloud and that would bill for minutes of audio, so it
+# is refused rather than truncated mid-sentence.
+TTS_MAX_CHARS = 2000
+
+# Advertised only when the server does not name the configured voice's language
+# (an older add-on, or a voice whose language was left unset). A real voice
+# speaks one language, and the server tells us which — see supported_languages
+# in tts.py. This fallback keeps such a setup usable instead of silent.
+TTS_LANGUAGES = STT_LANGUAGES
+TTS_DEFAULT_LANGUAGE = "en"
 
 # Home Assistant language codes that the transcription model spells otherwise.
 LANGUAGE_ALIASES = {"nb": "no"}

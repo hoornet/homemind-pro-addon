@@ -94,6 +94,33 @@ function logPersonaSource(requestPrompt?: string, serverDefault?: string): void 
   console.log(`[persona] ${signature}`);
 }
 
+/**
+ * The capabilities half of /api/health.
+ *
+ * The HA integration reads these to decide whether to register speech-to-text
+ * and text-to-speech entities at all — an entity that would answer every
+ * request with a 501 is worse than no entity, because it still appears as a
+ * choice in the Assist pipeline.
+ *
+ * A voice speaks one language. Naming it lets the integration advertise
+ * exactly that language, instead of offering itself for pipelines whose words
+ * the configured voice would read with the wrong phonetics. The language is
+ * reported only alongside a voice that can speak it: a language with no voice
+ * behind it would have the integration advertise a capability that answers 501.
+ */
+export function healthCapabilities(
+  stt?: unknown,
+  tts?: unknown,
+  ttsLanguage?: string
+): { stt: boolean; tts: boolean; ttsLanguage: string | null } {
+  const canSpeak = Boolean(tts);
+  return {
+    stt: Boolean(stt),
+    tts: canSpeak,
+    ttsLanguage: canSpeak ? ttsLanguage?.trim() || null : null,
+  };
+}
+
 export function createRouter(
   llm: IChatEngine,
   memory: IMemoryStore,
@@ -102,7 +129,8 @@ export function createRouter(
   defaultCustomPrompt?: string,
   conversations?: IConversationStore,
   stt?: ISttService,
-  tts?: ITtsService
+  tts?: ITtsService,
+  ttsLanguage?: string
 ): Router {
   const router = Router();
 
@@ -447,11 +475,7 @@ export function createRouter(
       timestamp: new Date().toISOString(),
       version,
       memoryBackend,
-      // Capabilities the caller can act on. The HA integration reads `stt` to
-      // decide whether to register a speech-to-text entity at all — an entity
-      // that would answer every request with a 501 is worse than no entity,
-      // because it still appears as a choice in the Assist pipeline.
-      stt: Boolean(stt),
+      ...healthCapabilities(stt, tts, ttsLanguage),
     });
   });
 

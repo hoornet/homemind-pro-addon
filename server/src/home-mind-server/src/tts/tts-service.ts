@@ -30,8 +30,14 @@ export class OpenAITtsService implements ITtsService {
     // OpenAI TTS detects language automatically from input text — no explicit language param needed
     const response = await this.client.audio.speech.create({
       model: this.model,
+      // Cast because the SDK's type lists only OpenAI's own voices, while the
+      // voice name is whatever the configured endpoint accepts.
       voice: this.voice as "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer",
       input: text,
+      // Must be explicit. OpenAI defaults to MP3, but an OpenAI-compatible
+      // endpoint need not: at least one defaults to raw PCM, which /api/tts
+      // would then serve as audio/mpeg and every caller would play as noise.
+      response_format: "mp3",
     });
     const arrayBuffer = await response.arrayBuffer();
     return Buffer.from(arrayBuffer);

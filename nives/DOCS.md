@@ -50,6 +50,37 @@ Use Nives Cloud, a managed AI service on a prepaid balance. Buy a ticket, use it
 | LLM Mode | Set to `cloud` |
 | Nives API Key | Your key from nives.house |
 | Transcription | Off by default. Turn it on to let Nives do the listening too — see below |
+| Voice | Off by default. Pick a voice and Nives reads her replies aloud — see below |
+
+### Let Nives do the speaking (optional)
+
+Home Assistant can already read replies aloud, but the free local voices are
+thin outside English, and in some languages the only one available sounds like a
+news bulletin read by a machine.
+
+Pick a **Voice** and restart the add-on. Within a couple of minutes Nives
+appears as a **Text-to-speech** choice in your Assist pipeline (Settings → Voice
+assistants), speaking in a voice native to that language rather than a foreign
+one sounding out the words. (In a hurry? Reloading the Nives integration under
+Settings → Devices & services makes it appear at once.) Speaking is paid from
+the same balance as your conversations, and costs a fraction of a cent per
+reply.
+
+Two voices are available today, both Slovene:
+
+| Setting | Voice |
+|---|---|
+| `slovene_female` | A woman's voice |
+| `slovene_male` | A man's voice |
+
+More languages will follow as each is tested. A voice is added only when it is
+genuinely good in that language — a bad voice is worse than none, and the local
+ones are free.
+
+> **A voice speaks one language.** Nives offers herself as a speaking choice
+> only for the language of the voice you picked, so a Slovene voice will not be
+> offered to an English pipeline. If you run Assist in more than one language,
+> keep Home Assistant's own text-to-speech for the others.
 
 ### Let Nives do the listening (optional)
 
@@ -158,6 +189,7 @@ curl -H "Authorization: Bearer <token>" http://<addon-host>:3100/api/chat ...
 
 | Option | Description |
 |--------|-------------|
+| Voice | The voice Nives speaks her replies in, or `off` for no voice. Each choice is a voice native to that language; it applies once the add-on restarts. |
 | Custom Prompt | The assistant's personality — what you write replaces the default persona outright (e.g. "You are HAL 9000, the calm and precise computer from 2001"). This is the one place to set it; it applies once the add-on restarts. Leave empty for the default. |
 | Maximum Answer Length | How much room one written answer gets, in tokens. Leave it empty and Nives chooses. Raise it if long answers stop before they finish, which is most likely when you ask about several sensors at once or over a long period. Longer answers cost a little more. Spoken answers are not affected. |
 | Room map from exposed entities | On by default. Nives keeps a room map of your home, and it lists the entities you have exposed to Assist (Settings, Voice assistants, Expose), the same set Home Assistant's own assistant sees. Turn it off to list entities by type instead. Either way Nives can still find and control any entity by name; this only decides which ones are in the map. |
