@@ -308,7 +308,28 @@ export function formatDateTimeWithOffset(): {
 
 // Type for system prompt with caching
 /**
- * One line telling the model which grammatical gender to speak about itself in.
+ * How to write a reply a voice has to read out loud, plus which grammatical gender to
+ * speak about itself in.
+ *
+ * The writing rules are not guesses. Jure listened to each form on the Slovene voice
+ * (2026-09-09) and these were the failures — all of them faults of the TEXT, not the voice:
+ *
+ *   "19 stopinj C"  -> "devetnajstih stopinj ce"   (letter read aloud, number miscased)
+ *   "60%"           -> "šest nič"                   (read as two digits)
+ *   "8,6 µg/m³"     -> "8,6 g m"                    (micro and cubic dropped)
+ *   "VOC 156."      -> "VOC sto šestinpetdeseti"    (a digit before a full stop is an
+ *                                                    ordinal in Slovene: 156. = 156th)
+ *
+ * And these were read correctly, which is why the rules prefer symbols over spelling
+ * everything out — the written reply stays compact and the spoken one is right:
+ *
+ *   "19 °C"         -> "devetnajst stopinj Celzija"
+ *   "60 %"          -> "šestdeset odstotkov"
+ *   "8,6 mikrograma na kubični meter" -> as written
+ *
+ * The pattern: a symbol the voice knows is safer than the same unit half-spelled, and a
+ * space before the symbol is what separates the two. Only units with no readable symbol
+ * form have to be written out.
  *
  * Only ever added when a voice is configured, because the voice is what makes a
  * mismatch audible and because it is the half the listener cannot ignore. Many
@@ -321,16 +342,31 @@ export function formatDateTimeWithOffset(): {
  * the default persona, or a persona of one gender under a voice of the other.
  * The voice wins, because the voice is what the user hears.
  */
-export function genderPointer(gender?: "female" | "male"): string {
+export function spokenVoicePointer(gender?: "female" | "male"): string {
   if (!gender) return "";
   const forms = gender === "male" ? '"Ugasnil sem"' : '"Ugasnila sem"';
   const wrong = gender === "male" ? '"Ugasnila sem"' : '"Ugasnil sem"';
   return (
-    `\n\nYou speak aloud with a ${gender} voice. ALWAYS refer to yourself using ` +
-    `${gender} forms in every language that inflects words for the speaker's own gender ` +
-    `(Slovene, Croatian, Serbian, Czech, Slovak, Polish, Russian, Ukrainian, Hebrew, Arabic ` +
-    `and others). In Slovene this means ${forms}, NEVER ${wrong}. This applies to your own ` +
-    `first-person statements only; it never changes how you address or describe the user.`
+    `\n\n## Your reply is read out loud\n` +
+    `A ${gender} voice speaks every reply, so write to be HEARD. These exact forms were ` +
+    `tested on the voice; the wrong ones are unintelligible, not merely clumsy.\n` +
+    `- ALWAYS write a unit as its symbol with a space before it: "19 °C", "60 %", "8,6 kWh". ` +
+    `NEVER write the unit as a bare letter or word fragment ("19 stopinj C" is spoken ` +
+    `"devetnajstih stopinj ce") and NEVER close the symbol up against the number ("60%" is ` +
+    `spoken "šest nič").\n` +
+    `- Units with no symbol the voice can read must be written out in full words: ` +
+    `"8,6 mikrograma na kubični meter", NEVER "8,6 µg/m³" (spoken "8,6 g m").\n` +
+    `- NEVER end a sentence with a digit. In Slovene, Czech and German a numeral before a ` +
+    `full stop is an ordinal, so "VOC 156." is spoken "VOC sto šestinpetdeseti". Put a word ` +
+    `after it: "VOC je 156 enot."\n` +
+    `- Write whole sentences, not labelled fragments: "V spalnici je 19 °C, vlažnost pa je ` +
+    `60 %." NEVER "Spalnica: 19 °C, 60 % vlažnost." Inflect the words after a numeral as the ` +
+    `language requires.\n` +
+    `- ALWAYS refer to yourself using ${gender} forms in every language that inflects words ` +
+    `for the speaker's own gender (Slovene, Croatian, Serbian, Czech, Slovak, Polish, ` +
+    `Russian, Ukrainian, Hebrew, Arabic and others). In Slovene this means ${forms}, NEVER ` +
+    `${wrong}. This applies to your own first-person statements only; it never changes how ` +
+    `you address or describe the user.`
   );
 }
 
@@ -356,7 +392,7 @@ export function buildSystemPrompt(
 
   const identity =
     (customPrompt ? customPrompt : isVoice ? DEFAULT_VOICE_IDENTITY : DEFAULT_IDENTITY) +
-    genderPointer(voiceGender);
+    spokenVoicePointer(voiceGender);
 
   const instructions = isVoice ? VOICE_INSTRUCTIONS : SYSTEM_INSTRUCTIONS;
 
@@ -428,7 +464,7 @@ export function buildSystemPromptText(
 
   const identity =
     (customPrompt ? customPrompt : isVoice ? DEFAULT_VOICE_IDENTITY : DEFAULT_IDENTITY) +
-    genderPointer(voiceGender);
+    spokenVoicePointer(voiceGender);
 
   const instructions = isVoice ? VOICE_INSTRUCTIONS : SYSTEM_INSTRUCTIONS;
 
